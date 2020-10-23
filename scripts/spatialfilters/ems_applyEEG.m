@@ -1,41 +1,46 @@
-function [EEGsf, T0, Tx] = ems_applyEEG(EEG, FactorCnd, CNDs, varargin)
+function [EEGsf, T0, Tx] = ems_multitrial_applyEEG(EEG, FactorCnd, CNDs, varargin)
 
-fprintf('### EMS ###\n')
+fprintf('### EMS ###\n\n')
 
-%% Default parameters
+st = dbstack;
+fnnamestr = st.name;
+
+%% Parameters
+
+% Default parameters
 P.DataField     = 'data';
 P.FactorField   = 'F';
-P.BadData       = 'none';   % 'replacebymean' / 'none'
-P.method        = 'ems_2conddiff_oneout'; % 'ems_2cond_diff' / 'ems_2cond_perm' / 'ems_2cond_oneout' / 'ems_2conddiff_perm' / 'ems_2conddiff_oneout' / 'ems_1cond_perm' / 'ems_1cond_oneout'
+P.kPCA          = [];
+P.method        = 'ems_2conddiff_perm_multitrials'; % 'ems_2cond_perm' | 'ems_2cond_oneout' | 'ems_2conddiff_perm' | 'ems_2conddiff_oneout' | 'ems_1cond_perm' | 'ems_1cond_oneout'
 P.noiseCov      = 0;
+P.timeCov0      = [];
 P.T0            = [];
 P.Tx            = [];
 P.Np            = 100;
-P.N2bias        = 0.7;
+P.N2bias        = 0.75;
 P.times         = [];
 P.channels      = [];
-P.trimmean      = [];
+P.ptrimmean     = 0;
 
-%% Optional parameters
+% Get the optional parameters
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK
-    error('ems_applyEEG: Non recognized inputs')
+    error('%s: Non recognized inputs',fnnamestr)
 end
 
-%% Check the input
+% Check the input
 if any(strcmp(P.method,{'ems_2cond_perm' ; 'ems_2cond_oneout' ; 'ems_2conddiff_perm' ; 'ems_2conddiff_oneout'}))
     if length(CNDs)~=2
-        error('ems_applyEEG: two conditions are requiered')
+        error('%s: two conditions are requiered',fnnamestr)
     end
 elseif any(strcmp(P.method,{'ems_1cond_perm'; 'ems_1cond_oneout'}))
     if length(CNDs)~=1
-        error('ems_applyEEG: one condition is requiered')
+        error('%s: one condition is requiered',fnnamestr)
     end
 end
-if ~any(strcmp(P.method,{'ems_2cond_diff'; 'ems_2cond_perm' ; 'ems_2cond_oneout' ; 'ems_2conddiff_perm' ; 'ems_2conddiff_oneout';'ems_1cond_perm'; 'ems_1cond_oneout'}))
-    error('ems_applyEEG: not recognized method')
-end
-
+% if ~any(strcmp(P.method,{'ems_2cond_perm' ; 'ems_2cond_oneout' ; 'ems_2conddiff_perm' ; 'ems_2conddiff_oneout';'ems_1cond_perm'; 'ems_1cond_oneout'}))
+%     error('%s: not recognized method',fnnamestr)
+% end
 if ischar(FactorCnd)
     FactorCnd = {FactorCnd};
 end
@@ -45,55 +50,84 @@ if ischar(P.noiseCov)
 elseif P.noiseCov==1 || P.noiseCov==0
     noiseCov = P.noiseCov;
 end
-
-T0 = P.T0;
-Tx = P.Tx;
-sz = size(EEG.(P.DataField));
+if isempty(P.timeCov0)
+    timeCov0 = [];
+elseif length(P.timeCov0)==2
+    timeCov0 = (EEG.times>P.timeCov0(1)) & (EEG.times<P.timeCov0(2));
+elseif (length(P.timeCov0)~=size(EEG.data,2))
+    error('Bad time to compute the covariance of the noise') 
+end
 
 if isempty(P.times)
     P.times = [EEG.times(1) EEG.times(end)];
 end
 P.times = (EEG.times>=P.times(1)) & (EEG.times<=P.times(end));
 if isempty(P.channels)
-    P.channels = (1:sz(1));
+    P.channels = (1:size(EEG.(P.DataField),1));
 end
 
-%% Remove bad data
-if ~isempty(EEG.(P.DataField))
-   [~, Y ] = eega_rmvbaddata(EEG, 'BadData', P.BadData, 'DataField', P.DataField);
-    % Y=EEG.(P.DataField);
-    F = EEG.(P.FactorField);
-else
-    Y=[];
-    F=[];
-end
 
 %% Spatial filter
-
+T0 = P.T0;
+Tx = P.Tx;
+Y = EEG.(P.DataField)(P.channels,P.times,:); 
+[Ne,Ns,Nt] = size(Y);
 if length(CNDs)==1
     theFilt = CNDs{1};
 elseif length(CNDs)==2
     theFilt = sprintf('%s-%s',CNDs{1},CNDs{2});
 end
 
-if ~isempty(Y)
+if ~isempty(Y)  % if there is good data go on
     
-    
-    %% Build the table defying the conditions
-    TableCNDs = cnd_buildtablecond(FactorCnd, EEG.(P.FactorField));
-    
-    %% Get the conditions
+    % PCA of the data
+    if ~isempty(P.kPCA)
+        fprintf('Reducing dimensions (PCA)\n')
+        for i=1:Ne  % normalize the data
+            d = Y(i,:,:);
+            d = d(:)/norm(d(:));
+            Y(i,:,:) = reshape(d,[1 Ns Nt]);
+        end
+        dd = reshape(Y,Ne,[])';
+        dd = bsxfun(@minus,dd,mean(dd,1));
+        c0 =(1/Nt).*(dd'*dd);
+        c0 = c0/norm(c0);
+        [V, S] = eig(c0);
+        V = real(V);
+        S = real(S);
+        S = abs(S);
+        [L, idx] = sort(diag(S), 'descend') ;
+        V = V(:,idx);
+        exppca1 = cumsum(L)/sum(L)*100;
+        if P.kPCA<1
+            ki = find(exppca1>=(P.kPCA*100),1);
+            exppca1 = exppca1(ki);
+        else
+            ki = P.kPCA;
+            if abs((exppca1(ki)-100))<1e-3
+                ki = find(exppca1>=(100-1e-3),1);
+            end
+            exppca1 = exppca1(ki);
+        end
+        fprintf('PCA: the explained variance by the %i first components is %4.2f\n',ki,exppca1)
+        Y = dd * V;
+        Y = Y(:,1:ki)';
+        Y = reshape(Y,[ki, Ns, Nt ]);
+        fprintf('\n');
+    end
+
+    % Get the conditions
     F = EEG.(P.FactorField);
+    TableCNDs = cnd_buildtablecond(FactorCnd, EEG.(P.FactorField));
     [condition, theCND, trialsxCND, Favg] = cnd_findtrialsxcond(TableCNDs, F);
+        
     [~,CNDsIND] = ismember(CNDs, theCND);
     
-    %% Spatial filter
-    
-    [~,CNDsIND] = ismember(CNDs, theCND);
+    % average factor
     Favg{1}.name = 'diff';
     Favg{1}.val = {theFilt};
     Favg{1}.g = 1;
-
+    
     % build a functioon handle for the spatial filter to apply
     fh = str2func(P.method);
     fprintf('Filter: %s \n', theFilt)
@@ -104,98 +138,36 @@ if ~isempty(Y)
     if isempty(T0), T0=any(COND,2); end
     if isempty(Tx), Tx=any(COND,2); end
     
-%     if length(CNDs)==1
-%         g1 = condition==CNDsIND(1);
-%         if ~any(g1)
-%             error('Conditions not found')
-%         end
-%         COND(:,1)=logical(g1);
-%     elseif length(CNDs)==2
-%         g1 = condition==CNDsIND(1);
-%         g2 = condition==CNDsIND(2);
-%         if ~any(g1) || ~any(g2)
-%             error('Conditions not found')
-%         end
-%         COND(:,1)=logical(g1);
-%         COND(:,2)=logical(g2);
-%     end
-%     if isempty(T0), T0=any(COND,2); end
-%     if isempty(Tx), Tx=any(COND,2); end
-    
-    
-%     
-%     
-%     % find the trials in the condtions
-%     idxFcnd=[];
-%     i=0;
-%     while isempty(idxFcnd) && (i<=length(F))
-%         i=i+1;
-%         if strcmp(F{i}.name,FactorCnd)
-%             idxFcnd=i;
-%         end
-%     end
-%     if isempty(idxFcnd)
-%         error('Condition factor not found')
-%     end
-%     
-%     if length(CNDs)==1
-%         g1 = find(strcmp(F{idxFcnd}.val,CNDs{1}));
-%         if isempty(g1)
-%             error('Conditions not found')
-%         end
-%         COND(:,1)=F{idxFcnd}.g==g1;
-%         COND=logical(COND);
-%     elseif length(CNDs)==2
-%         g1 = find(strcmp(F{idxFcnd}.val,CNDs{1}));
-%         g2 = find(strcmp(F{idxFcnd}.val,CNDs{2}));
-%         if isempty(g1) || isempty(g2)
-%             error('Conditions not found')
-%         end
-%         COND(:,1)=F{idxFcnd}.g==g1;
-%         COND(:,2)=F{idxFcnd}.g==g2;
-%         COND=logical(COND);
-%     end
-%     if isempty(T0), T0=any(COND,2); end
-%     if isempty(Tx), Tx=any(COND,2); end
-    
-    % apply the function
+    % apply the function to the trials in that conditions
+    [Ne, Ns, Nt] = size(Y);
     if all(sum(COND,1)>2)
-        if any(strcmp(P.method,{'ems_2cond_perm' 'ems_2conddiff_perm' 'ems_1cond_perm'})) 
-            [ x, w ] = fh(Y(P.channels,P.times,:), COND, T0, Tx, noiseCov, P.N2bias, P.Np);
-        elseif any(strcmp(P.method,{'ems_2cond_oneout' 'ems_2conddiff_oneout' 'ems_1cond_oneout'}))
-            [ x, w ] = fh(Y(P.channels,P.times,:), COND, T0, Tx, noiseCov);
-        elseif any(strcmp(P.method,{'ems_2cond_diff'}))  % Sebastian function 
-            [ x, w ] = ems_2cond_diff(Y(P.channels,P.times,:),COND,[],[],noiseCov);
-            x = permute(x,[3 2 1]);
+        if any(strcmp(P.method,{'ems_2cond_oneout'; 'ems_2conddiff_oneout'}))
+            [X, W] = fh(Y, COND, T0, Tx, noiseCov);
+            X = mean(X(:,:,COND(:,1)),3) -  mean(X(:,:,COND(:,2)),3);
+        elseif any(strcmp(P.method,{'ems_2cond_perm' ; 'ems_2conddiff_perm' }))
+            [X, W] = fh(Y, COND, T0, Tx, noiseCov, P.N2bias, P.Np);  
+            X = mean(X(:,:,COND(:,1)),3) -  mean(X(:,:,COND(:,2)),3);
+        elseif any(strcmp(P.method,{'ems_2conddiff_perm_multitrials'}))
+            [X, W] = fh(Y, COND, T0, Tx, noiseCov, timeCov0, P.N2bias, P.Np, P.ptrimmean);
         end
-        x1 = x(:,:,COND(Tx,1)); 
-        x2 = x(:,:,COND(Tx,2)); 
-        if isempty(P.trimmean) || (P.trimmean==0) 
-            x1 = mean(x1,3);
-            x2 = mean(x2,3);
-        else
-            x1 = trimmean(x1,P.trimmean,3);
-            x2 = trimmean(x2,P.trimmean,3);
-        end
-        X = nan( 1, sz(2) );
-        W = nan( sz(1), sz(2) );
-        X(1, P.times, :) = x1-x2;
-        W(P.channels, P.times) = w;
-        for idf=1:length(F)
-            F{idf}.g = F{idf}.g(Tx);
-        end
+%         X = nan( 1, Ns, size(x,3) );
+%         W = nan( Ne, Ns );
+%         X(:,P.times,:) = x;
+%         W(:,P.times) = w;
+%         X = sum(x,1);
+%         W = w;
     else
         warning('Not enougth good data')
         X = [];
         W = [];
-        F = [];
+        Favg = [];
     end
 else
     X = [];
     W = [];
     Favg = [];
+    
 end
-
 
 %% ------------------------------------------------------------------------
 %% Fill the structure
@@ -209,16 +181,16 @@ if isfield(EEG, 'FilterCNDs')
     EEGsf.FilterCNDs    = CNDs;
 end
 if isfield(EEG, 'chanlocs')
-    EEGsf.chanlocs      = EEG.chanlocs;
+    EEGsf.chanlocs      = EEG.chanlocs(P.channels);
 end
 if isfield(EEG, 'chaninfo')
-    EEGsf.chaninfo      = EEG.chaninfo;
+    EEGsf.chaninfo      = EEG.chaninfo(P.channels);
 end
 if isfield(EEG, 'srate')
     EEGsf.srate         = EEG.srate;
 end
 if isfield(EEG, 'times')
-    EEGsf.times         = EEG.times;
+    EEGsf.times         = EEG.times(P.times);
 end
 if isfield(EEG, 'freq')
     EEGsf.freq         = EEG.freq;

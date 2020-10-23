@@ -18,6 +18,9 @@
 %       - 1 = segments are aligened with the previous segment
 %       - 2 = segments are aligned in the midle of the previous and the next
 %       - 3 = segments are linearly fit between the two
+%       - 4 = segments before and after are roboust detrended excluding bad
+%           samples, then linearly fit between the rest of the data, and 
+%           finally the bad segment is linearly fit inside
 %
 %
 % OUTPUTS
@@ -30,7 +33,7 @@
 % -------------------------------------------------------------------------
 
 
-function [DATA, Interp] = eega_tTargetPCAxEl( DATA, BCT, IT, IC, nSV, vSV, varargin)
+function [DATAgood, Interp] = eega_tTargetPCAxEl( DATA, BCT, IT, IC, nSV, vSV, varargin)
 
 if nargin<3
     IT=[];
@@ -51,6 +54,8 @@ P.silent        = 0;
 P.maxTime       = 0.200;
 P.maskTime      = 0;
 P.splicemethod  = 1; % 
+P.wsize         = 1000; % number of samples to mask the bad segment to detrend if P.splicemethod = 4
+P.order         = 3; % order of polynomial to fit the trend if P.splicemethod = 4
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK
@@ -72,8 +77,8 @@ end
 if isempty(vSV)
     vSV=0.001;
 end
-if ~any(P.splicemethod==[0 1 2 3])
-    error('eega_tTargetPCAxEl: wrong splicing method. Options 1 / 2 / 3')
+if ~any(P.splicemethod==[0 1 2 3 4])
+    error('eega_tTargetPCAxEl: wrong splicing method. Options 0 | 1 | 2| 3 | 4')
 end
 
 %% ------------------------------------------------------------------------
@@ -100,14 +105,16 @@ for el=1:nEl
     end
 end
 normEl(isnan(normEl) | (normEl<1e-3))=nanmean(normEl);
-DATA=DATA./repmat(normEl,[1 nS*nEp]);
+DATA = DATA./repmat(normEl,[1 nS*nEp]);
 
-DATAgood=DATA(IC,:);
+% correct
+% -------
+DATAgood = DATA;
 for el=1:nEl
     
     if IC(el)
         
-        elgood=sum(IC(1:el));
+        elgood = sum(IC(1:el));
         
         if ~P.silent
             fprintf('Electrode % 4.0d. ', el)
@@ -126,39 +133,49 @@ for el=1:nEl
             
             % target PCA
             % ----------
-            [DATAgood,tC] = targetpca(DATAgood,bad_if,nSV,vSV,elgood);
+            [d,tC] = targetpca(DATA(IC,:), bad_if, nSV, vSV, elgood);
+            d = d(elgood,:);
             Interp(el,tC) = 1;
             
             % splice the segments of data together
             % ------------------------------------
             if P.splicemethod==1
                 epoch_if = [(1:nS:nS*nEp)' (nS:nS:nS*nEp)'];
-                DATAgood(elgood,:) = eega_splicesgments1(DATAgood(elgood,:), bad_if, epoch_if, [], [], []);
+                d = eega_splicesgments1(d, bad_if, epoch_if, [], [], []);
             elseif P.splicemethod==2
                 epoch_if = [(1:nS:nS*nEp)' (nS:nS:nS*nEp)'];
-                DATAgood(elgood,:) = eega_splicesgments2(DATAgood(elgood,:), bad_if, epoch_if, [], [], []);
+                d = eega_splicesgments2(d, bad_if, epoch_if, [], [], []);
             elseif P.splicemethod==3
                 epoch_if = [(1:nS:nS*nEp)' (nS:nS:nS*nEp)'];
-                DATAgood(elgood,:) = eega_splicesgments3(DATAgood(elgood,:), bad_if, epoch_if, [], [], []);
+                d = eega_splicesgments3(d, bad_if, epoch_if, [], [], []);
+            elseif P.splicemethod==4
+                epoch_if = [(1:nS:nS*nEp)' (nS:nS:nS*nEp)'];
+                d = eega_splicesgments4(d, bad_if, epoch_if, [], [], [], P.wsize, P.order);
             end
             
+            % store the data
+            % --------------
+            DATAgood(el,:) = d;
+
         else
             fprintf('No segments to apply target PCA were found.\n')
         end
+        
         
     else
         fprintf('Electrode % 4.0d. Bad channel.\n', el)
     end
 end
-DATA(IC,:) = DATAgood;
+% DATA(IC,:) = DATAgood;
 
 % rescale the data back
 % ---------------------
-DATA=DATA.*repmat(normEl, [1 nS*nEp]);
+DATAgood = DATAgood.*repmat(normEl, [1 nS*nEp]);
+DATA = DATA.*repmat(normEl, [1 nS*nEp]);
 
 %% ------------------------------------------------------------------------
 %% Reshape the data
-DATA = reshape(DATA, [nEl nS nEp]);
+DATAgood = reshape(DATAgood, [nEl nS nEp]);
 Interp = logical(reshape(Interp,[nEl nS nEp]));
 
 end

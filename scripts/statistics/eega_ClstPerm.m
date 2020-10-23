@@ -4,6 +4,11 @@ function [Avg, GAvg, stat, CNDsIDX] = eega_ClstPerm(EEGALL, varargin)
 
 fprintf('### Cluster Based Permutation Analysis ### \n')
 
+% check that Fieldtrip is in the path
+if exist('ft_timelockstatistics','file')~=2
+    error('The FieldTrip toolbox is not in the path. Add it to the path (https://www.fieldtriptoolbox.org/)')
+end
+
 %% ------------------------------------------------------------------------
 %% Parameters
 

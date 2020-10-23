@@ -97,7 +97,7 @@ i = i+1;
 % REJECT: too short rejected segments are marked as good
 Art(i).algorithm            = 'eega_tIncShortBad';
 Art(i).loops                = 4;
-Art(i).P.timelim            = 0.040;
+Art(i).P.timelim            = 0.050;
 i = i+1;
 
 % REJECT: too short not included segments

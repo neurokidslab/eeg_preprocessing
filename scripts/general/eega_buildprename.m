@@ -40,6 +40,8 @@ for i=1:2:length(Fnct)
             new = 'a_';
         case 'eega_detrend'
             new = 'd_';
+        case 'eega_ntdetrend'
+            new = 'rd_';
         case 'eega_filter'
             if any(strcmp(Fnct{i+1},'minphase')) && Fnct{i+1}{find(strcmp(Fnct{i+1},'minphase'))+1}
                 causal = 'c';

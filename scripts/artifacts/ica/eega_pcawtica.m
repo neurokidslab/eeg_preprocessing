@@ -37,6 +37,13 @@ if ~OK
     error('eega_pcawtica: Non recognized inputs')
 end
 
+% If MARA has to be applied check that it is install
+if P.applymara
+    if exist('MARA','file')~=2
+        error('The MARA toolbox is not in the path. Install the plugin (https://github.com/irenne/MARA)')
+    end   
+end
+
 %% Compute the grand sum-squared data
 var_org  = sum(sum(EEG.data(~EEG.artifacts.BC,~EEG.artifacts.BT).^2)); 
 

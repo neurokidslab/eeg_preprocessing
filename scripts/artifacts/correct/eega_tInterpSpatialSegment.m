@@ -40,7 +40,7 @@
 %
 % -------------------------------------------------------------------------
 
-function [ DATA, Interp ] = eega_tInterpSpatialSegment(DATA, BCT, GoodCh, InterTime, chanlocs, p_int, varargin )
+function [ DATAgood, Interp ] = eega_tInterpSpatialSegment(DATA, BCT, GoodCh, InterTime, chanlocs, p_int, varargin )
 
 fprintf('### Spatial interpolatiom of bad segments ###\n')
 
@@ -63,8 +63,8 @@ if ~OK
 end
 
 % Check the input
-if ~any(P.splicemethod==(0:3))
-    error('eega_tInterpSpatialSegment: aligment can have values ''none'' / ''linear'' / ''fix'' ')
+if ~any(P.splicemethod==[0 1 2 3 4])
+    error('eega_tInterpSpatialSegment: wrong splicing method. Options 0 | 1 | 2| 3 | 4')
 end
 if strcmp(P.distmethod,{'distance'  'triangulation'  'template' })
     error('eega_tInterpSpatialSegment: distmethod can have values ''distance'' / ''triangulation'' / ''template'' ')
@@ -109,6 +109,7 @@ ok = 0;
 Interp = false([nEl nS nEp]);
 datainterp = sum(Interp(:));
 counter = 0;
+DATAgood = DATA;
 while ~ok  && counter<P.maxloop %loop till all possible data to interpolate is interpolated
     counter = counter+1;
     
@@ -203,7 +204,7 @@ while ~ok  && counter<P.maxloop %loop till all possible data to interpolate is i
                 
                 if interpdone
                     Interp(BadCh2Int,Im:Fm,ep) = 1;
-                    DATA(BadCh2Int,Im:Fm,ep) = badchandata;
+                    DATAgood(BadCh2Int,Im:Fm,ep) = badchandata;
                     BCT(BadCh2Int,Im:Fm,ep) = 0;
                 end
             end
@@ -216,11 +217,13 @@ while ~ok  && counter<P.maxloop %loop till all possible data to interpolate is i
         % -----------------------------------------
         switch P.splicemethod
             case 1 % align to the previous
-                DATA(:,:,ep) = eega_splicesgments1(DATA(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));
+                DATAgood(:,:,ep) = eega_splicesgments1(DATAgood(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));
             case 2 % align in the midle of the previous and the next
-                DATA(:,:,ep) = eega_splicesgments2(DATA(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));
+                DATAgood(:,:,ep) = eega_splicesgments2(DATAgood(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));
             case 3 % linearly fit between the two
-                DATA(:,:,ep) = eega_splicesgments3(DATA(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));
+                DATAgood(:,:,ep) = eega_splicesgments3(DATAgood(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));
+            case 4 
+                DATAgood(:,:,ep) = eega_splicesgments4(DATAgood(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));     
         end
         
         fprintf('\n')

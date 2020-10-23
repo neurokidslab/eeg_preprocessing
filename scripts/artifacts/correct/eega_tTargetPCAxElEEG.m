@@ -31,7 +31,7 @@ alltime = 0;
 allchannels = 0;
 idxrmv = [];
 for i=1:2:length(varargin)
-    if strcmpi(varargin{i},'maxtime') || strcmpi(varargin{i},'masktime')
+    if strcmpi(varargin{i},'maxtime') || strcmpi(varargin{i},'masktime') || strcmpi(varargin{i},'wsize')
         varargin{i+1} = round(varargin{i+1}*EEG.srate);
     end
     if strcmp(varargin{i},'savecorrected')
