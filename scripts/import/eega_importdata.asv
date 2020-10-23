@@ -20,9 +20,7 @@ switch ext
         EEG = pop_readegi(filename);
     case '.mff'
         EEG = pop_readegimff(filename);
-    case '.vhdr'
-        [pathname,filename,ext] = fileparts(filename);
-        EEG = pop_loadbv(pathname,[filename ext]);
+    case
 end
 
 %add the subject name to the EEGLAB structure
