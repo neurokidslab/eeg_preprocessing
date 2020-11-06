@@ -287,6 +287,68 @@ end
 fprintf('\nNew information added to %d events \n\n', count)
 % figure, histogram(v_diff)
 
+%% Search for events in the event file no present in the EEG structure
+% If there are not events add the first one in the event file
+if isempty(EEG.event)
+    EEG.event(1).type = Ed{1,id_code};
+    EEG.event(1).duration = Ed{1,id_dur} * EEG.srate;
+    EEG.event(1).latency =  Ed{1,id_onset} * EEG.srate;
+end
+  
+%get the type and latencies from the EEGLAB structure
+TIMEeeg = nan(length(EEG.event),1);
+TYPEeeg = cell(length(EEG.event),1);
+for ie=1:length(EEG.event)
+    TIMEeeg(ie) = EEG.urevent(EEG.event(ie).urevent).latency;
+    TYPEeeg{ie} = EEG.urevent(EEG.event(ie).urevent).type;
+end
+
+%get the indexes of the extra fields in the event file
+id_extra = find(~EnameOK);
+id_extraname = id_extra(1:2:end);
+id_extravals = id_extra(2:2:end);
+
+% 
+% type = cell(length(EEG.event),1);
+% lat = nan(length(EEG.event),1);
+% for i=1:length(EEG.event)
+%     type{i} = EEG.event(i).type;
+%     lat(i) = EEG.event(i).latency;
+% end
+
+%loop through the events in the event file
+ncount = 0;
+for i=1:size(Ed,1)
+    
+    %check if the event exists in the EELAB structure
+    idx_type = strcmp(TYPEeeg, TYPEevt{i});
+    idx_time = abs(TIMEeeg - TIMEevt(i))<=latlim;
+    exists = any(idx_type==1 & idx_time==1);
+    
+    if ~exists
+         
+        fnamesextra_i = Ed(i,id_extraname);
+        fnamesextra_i(cellfun(@isempty,fnamesextra_i)) = [];
+        fvalsextra_i = Ed(i,id_extravals);
+        fvalsextra_i(cellfun(@isempty,fvalsextra_i)) = [];
+        
+        fnamesbase_i = {'type' 'latency' 'urevent'};
+        fvalsbase_i = cat(2,TYPEevt(i), TIMEevt(i), length(EEG.urevent)+1);
+        
+        fnames_i = cat(2, fnamesbase_i, fnamesextra_i);
+        fvals_i = cat(2, fvalsbase_i, fvalsextra_i);
+        
+        evn = length(EEG.event)+1;
+        for ff=1:length(fnames_i)
+            EEG.event(evn).(fnames_i{ff}) = fvals_i{ff};
+        end
+        
+        % update the counter
+        ncount = ncount+1;
+    end
+end
+fprintf('%d new events were added\n',ncount);
+
 %% Check the structure
 EEG = eeg_checkset(EEG, 'eventconsistency');
 EEG = eeg_checkset(EEG, 'checkur');

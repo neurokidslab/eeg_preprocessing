@@ -5,11 +5,11 @@
 % INPUTS
 % EEG           EEG structure
 % order         order of polynomial or number of sin/cosine pairs
-% w             weights.
-%               Default [] --> none
-%               'art' --> the matrix with the artifatcs is used (~BCT)
-%               [t1 t2] time interval --> w=1 in [t1 t2], w=0 out [t1 t2]
-%               logical matrix of the sie of the data
+% w             weights to compute the robus detrending
+%               - [] --> none (default)
+%               - string --> the matrix EEG.(string) is used
+%               - [ta1 ta2; tb1 tb2] time intervals --> w=1 in [t1 t2], w=0 out [t1 t2]
+%               - logical matrix of the size of the data
 % basis         'polynomials' [default] or 'sinusoids', or user-provided matrix
 % thresh        threshold for outliers [default: 3 sd]
 % niter         number of iterations [default: 3]
@@ -49,26 +49,42 @@ end
 
 % check the inputs
 if isempty(P.weights)
-    disp('No initial weights were provided')
+    fprintf('No initial weights were provided\n')
 else
     if ischar(P.weights)
-        if strcmp(P.weights,'art')
+        if strcmp(P.weights,'arttifacts.BCT')
             if isfield(EEG,'artifacts') && isfield(EEG.artifacts,'BCT')
-                disp('Artifacted samples have an initial weight equal to 0')
+                fprintf('Artifacted samples have an initial weight equal to 0\n')
                 P.weights = ~EEG.artifacts.BCT;
                 weightsmat = 1;
             else
-                disp('Artifacted field not found')
-                disp('No initial weights will be used')
+                warning('%s field not found. No initial weights will be used',P.weights)
                 P.weights = [];
                 weightsmat = 0;
             end
         else
-            error('Unrecognized input for weights')
+            if isfield(EEG,P.weights)
+                fprintf('Initial weights based on the matrix in field %s\n', P.weights)
+                P.weights = EEG.(P.weights);
+                if size(P.weights,1)==1
+                    P.weights = repmat(P.weights,[size(EEG.data,1) 1 1]);
+                end
+                if size(P.weights,3)==1
+                    P.weights = repmat(P.weights,[1 1 size(EEG.data,3)]);
+                end
+                if any(size(P.weights)~=size(EEG.data))
+                    error('The weights matrix has a wrong size')
+                end
+                weightsmat = 1;
+            else
+                warning('%s field not found. No initial weights will be used',P.weights)
+                P.weights = [];
+                weightsmat = 0;
+            end
         end
     elseif isnumeric(P.weights)
         if size(P.weights,2)==2
-            disp('Initial weights equal to 1 for samples in the time windows')
+            fprintf('Initial weights equal to 1 for samples in the time windows\n')
             tlimits = P.weights;
             P.weights = false(size(EEG.data,2),1);
             for i=1:size(tlimits,1)
@@ -76,14 +92,23 @@ else
                 P.weights(idx) = 1;
             end
             weightsmat = 0;
-        elseif size(P.weights)==size(EEG.data)
-                disp('Initial weights based on the provided matrix')
-                weightsmat = 1;
+        elseif size(P.weights,2)==size(EEG.data,2)
+            fprintf('Initial weights based on the provided matrix\n')
+            if size(P.weights,1)==1
+                P.weights = repmat(P.weights,[size(EEG.data,1) 1 1]);
+            end
+            if size(P.weights,3)==1
+                P.weights = repmat(P.weights,[1 1 size(EEG.data,3)]);
+            end
+            if any(size(P.weights)~=size(EEG.data))
+                error('The weights matrix has a wrong size')
+            end
+            weightsmat = 1;
         else
             error('Problem with weights')
         end
     else
-        error('Problem with weights')      
+        error('Problem with weights')
     end
 end
 if ~isempty(P.wsize)

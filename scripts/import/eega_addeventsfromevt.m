@@ -96,6 +96,14 @@ end
 
 %% Add avents that do not exist in the EEGLAB structure
 
+
+% If there are not events add the first one in the event file
+if isempty(EEG.event)
+    EEG.event(1).type = Ed{1,id_code};
+    EEG.event(1).duration = Ed{1,id_dur} * EEG.srate;
+    EEG.event(1).latency =  Ed{1,id_onset} * EEG.srate;
+end
+  
 %get the type and latencies from the EEGLAB structure
 type = cell(length(EEG.event),1);
 lat = nan(length(EEG.event),1);
@@ -117,10 +125,11 @@ for i=1:size(Ed,1)
         
         fprintf('Adding new event (n=%d)...\n',ncount+1);
 
-        %add an empty event at eh end
+        %add an empty event a the end
         fnames = fieldnames(EEG.event);
         nfff = length(fnames);
         fvals = cell(1,nfff);
+        
         EEG = pop_editeventvals( EEG, 'insert', [1 fvals]);
         
         %event number

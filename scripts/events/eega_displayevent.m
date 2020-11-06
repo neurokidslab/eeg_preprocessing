@@ -13,10 +13,13 @@
 % -------------------------------------------------------------------------
 
 
-function tbl = eega_displayevent(EEG, events)
+function tbl = eega_displayevent(EEG, events, silent)
 
 if nargin < 2
     events = [];
+end
+if nargin < 3
+    silent = 0;
 end
 
 ne = size(EEG.event,2);
@@ -62,8 +65,12 @@ tbl = table(nievent, urevent, type, latency, latdiff,...
     'VariableNames', {'Index' 'UR' 'Type' 'Latency' 'LatencyDiff'},...
     'RowNames',rawnames);
 
-fprintf('The list of events is: \n')
-disp(tbl)
+if ~silent
+    fprintf('The list of events is: \n')
+    disp(tbl)
+end
+
+end
 
 
 
