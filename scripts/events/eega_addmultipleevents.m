@@ -32,8 +32,8 @@ end
 fprintf('Adding event %s, number   ', newevent)
 for k=1:numel(REfev)
     for i=1:length(eventspos)
-        fprintf('\b\b')
-        fprintf('%02.0d', i)
+        fprintf('\b\b\b\b')
+        fprintf('%04.0d', i)
         
         
         % Get the latencies of the existying events
@@ -73,6 +73,7 @@ for k=1:numel(REfev)
                 fvals{j} =  newev.(fff{j});
             end
             EEGout = pop_editeventvals( EEGout, 'add', [evpos fvals]);
+%             EEGout = pop_editeventvals( EEGout, 'add', [length(EEGout.event)+1 fvals]);
                  
         end
     end

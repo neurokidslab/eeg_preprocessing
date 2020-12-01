@@ -13,9 +13,9 @@ Int = Interpolation;
 
 %% Define Bad Segments and Electrodes 
 
-BCall.nbt           = [0.70 0.40];
+BCall.nbt           = [0.70 0.50 0.30];
 
-BTall.nbc           = [0.70 0.40];
+BTall.nbc           = [0.70 0.50 0.30];
 BTall.minGoodTime   = 1.000;         % shorter intervals between bad segments will be marked as bad
 BTall.minBadTime    = 0.080;         % too short periods will not be considered as bad
 BTall.maskTime      = 0.500;         % also mark as bad surronding samples

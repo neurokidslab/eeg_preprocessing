@@ -40,7 +40,7 @@ if nargin<6 || isempty(bc)
     bc = false(size(data, 1), 1);
 end
 if nargin<7 || isempty(window)
-    window = 1000;
+    window = 4000;
 end
 if nargin<8 || isempty(order)
     order = 3;
@@ -85,7 +85,7 @@ if ~isempty(Iall)
         else
             s2 = Fall(i);
         end
-        bd = ~bct(:,s1:s2) & ~bt(s1:s2) & ~bc;
+        bd = bct(:,s1:s2) | repmat(bt(s1:s2),[szd(1) 1]) | repmat(bc, [1 (s2-s1+1)]);
         sx1 = Iall(i)-s1+1;
         sx2 = size(x,2) - (s2-Fall(i)) ;
         
@@ -95,7 +95,7 @@ if ~isempty(Iall)
         
         % ROBOUST DETRENDING OF THE BIG SEGMENT
         % -------------------------------------
-        [z,wout,~] = nt_detrend(y', order, bd');
+        [z,wout,~] = nt_detrend(y', order, ~bd');
         z = z';
         
         % LINEARLY FIT THE SEGMENT IN THE REST OF THE DATA

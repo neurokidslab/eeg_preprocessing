@@ -51,7 +51,9 @@ for e=1:ne
     if isev(e)
         type{i} = EEG.event(e).type;
         latency(i) = EEG.event(e).latency/EEG.srate;
-        urevent(i) = EEG.event(e).urevent;
+        if isfield(EEG.event(e),'urevent')
+            urevent(i) = EEG.event(e).urevent;
+        end
         nievent(i) = e;
         i = i+1;
     end

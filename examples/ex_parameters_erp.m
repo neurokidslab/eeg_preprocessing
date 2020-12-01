@@ -17,7 +17,7 @@ BCall.nbt           = [0.70 0.40 0.40];
 
 BCep.nbt            = [0.50 0.25 0]; %[0.15 0.05];
 
-BTep.nbc            = [0.70 0.40 0.15];
+BTep.nbc            = [0.70 0.40 0.30];
 BTep.minGoodTime    = 1.000;         % shorter intervals between bad segments will be marked as bad
 BTep.minBadTime     = 0.080;         % too short periods will not be considered as bad
 BTep.maskTime       = 0.500;         % also mark as bad surronding samples

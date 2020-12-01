@@ -139,16 +139,16 @@ for el=1:nEl
             
             % splice the segments of data together
             % ------------------------------------
-            if P.splicemethod==1
+            if P.splicemethod==1 % align to the previous
                 epoch_if = [(1:nS:nS*nEp)' (nS:nS:nS*nEp)'];
                 d = eega_splicesgments1(d, bad_if, epoch_if, [], [], []);
-            elseif P.splicemethod==2
+            elseif P.splicemethod==2 % align in the midle of the previous and the next
                 epoch_if = [(1:nS:nS*nEp)' (nS:nS:nS*nEp)'];
                 d = eega_splicesgments2(d, bad_if, epoch_if, [], [], []);
-            elseif P.splicemethod==3
+            elseif P.splicemethod==3 % linearly fit between the two
                 epoch_if = [(1:nS:nS*nEp)' (nS:nS:nS*nEp)'];
                 d = eega_splicesgments3(d, bad_if, epoch_if, [], [], []);
-            elseif P.splicemethod==4
+            elseif P.splicemethod==4 % use deternding to detrend the data before and after the artifatc and the place the artifacted data linearly alignining
                 epoch_if = [(1:nS:nS*nEp)' (nS:nS:nS*nEp)'];
                 d = eega_splicesgments4(d, bad_if, epoch_if, [], [], [], P.wsize, P.order);
             end

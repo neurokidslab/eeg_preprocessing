@@ -175,7 +175,7 @@ end
 % Remove too short periods with non artifacts
 if ~isempty(P.minGoodTime)
     P.minGoodTime = P.minGoodTime * EEG.srate;
-    if P.minGoodTime~=0
+    if P.minGoodTime~=0 && P.minGoodTime<(size(EEG.data,2)-2)
         for e=1:nEp
             isbadsmpl = BT(1,:,e);
             tgood = ~isbadsmpl(1,:);

@@ -53,8 +53,8 @@ P.pneigh            = 1;
 P.nsmplmean         = 1;
 P.maxloop           = 10;
 P.minintertime      = 0;
-P.splicemethod      = 1; % 0 / 1 / 2 / 3
 P.masktime          = 0;
+P.splicemethod      = 1; % 0 / 1 / 2 / 3
 P.silent            = 0;
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
@@ -222,8 +222,6 @@ while ~ok  && counter<P.maxloop %loop till all possible data to interpolate is i
                 DATAgood(:,:,ep) = eega_splicesgments2(DATAgood(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));
             case 3 % linearly fit between the two
                 DATAgood(:,:,ep) = eega_splicesgments3(DATAgood(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));
-            case 4 
-                DATAgood(:,:,ep) = eega_splicesgments4(DATAgood(:,:,ep), [Iall(:) Fall(:)], [1 size(DATA,2)], BCT(:,:,ep), ~InterTime(:,:,ep), ~GoodCh(:,:,ep));     
         end
         
         fprintf('\n')

@@ -90,10 +90,14 @@ EEG = eega_tArtifacts(EEG, ArtJump, 'FilterDo', 1, 'KeepRejPre', 1);
 EEG = eega_tDefBTBC(EEG, BTall.nbc,BCall.nbt,BCall.nbt,'keeppre',0,'minBadTime',BTall.minBadTime,'minGoodTime',BTall.minGoodTime,'maskTime',BTall.maskTime);
 %correct short bad segments of data (+ deman and high pass filter)
 EEG = eega_tTargetPCAxElEEG(EEG, Int.PCA.nSV, Int.PCA.vSV, 'maxTime', Int.PCA.maxTime,'maskTime', Int.PCA.maskTime,'splicemethod', Int.PCA.splicemethod, 'wsize', Int.PCA.wsize, 'order', Int.PCA.order);
+EEG = eega_demean(EEG);
+EEG = pop_eegfiltnew(EEG, filt_highpass, [], [], 0, [], [], minphase);
 %define bad channels and times
 EEG = eega_tDefBTBC(EEG, BTall.nbc,BCall.nbt,BCall.nbt,'keeppre',0,'minBadTime',BTall.minBadTime,'minGoodTime',BTall.minGoodTime,'maskTime',BTall.maskTime);
 %spatially interpolate segments of bad data (+ deman and high pass filter)
 EEG = eega_tInterpSpatialSegmentEEG(EEG, Int.Spl.p,'pneigh',Int.Spl.pneigh,'splicemethod',Int.Spl.splicemethod,'mingoodtime',Int.Spl.minGoodTime,'minintertime',Int.Spl.minInterTime,'masktime',Int.Spl.maskTime);
+EEG = eega_demean(EEG);
+EEG = pop_eegfiltnew(EEG, filt_highpass, [], [], 0, [], [], minphase);
 EEGforica = EEG;  % --> this data may be useful for ICA
 %spatially interpolate channels not working during the whole recording
 EEG = eega_tInterpSpatialEEG(EEG, Int.Spl.p,'pneigh',Int.Spl.pneigh);        

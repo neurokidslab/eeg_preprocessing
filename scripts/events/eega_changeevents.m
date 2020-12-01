@@ -70,7 +70,7 @@ end
 
 % Find the target events
 Targev = find(strcmp(evtype,targevent));
-TargevLat = nan(size(Refev));
+TargevLat = nan(size(Targev));
 for i =1:length(Targev)
     TargevLat(i) = EEG.event(Targev(i)).latency;
 end
@@ -82,20 +82,17 @@ for k=1:numel(Refev)
     
     % Find the target events in the time window
     tw = RefevLat(k) + twtargevent*EEG.srate;
-    Targev_k = Targev( (TargevLat <= tw(2)) & (TargevLat >= tw(1)) );
-    
+    Targev_ktime = Targev( (TargevLat <= tw(2)) & (TargevLat >= tw(1)) );
+    Targev_k = Targev(Targev>=Refev);
+    posevent = intersect(Targev_k,Targev_ktime);
+        
     % Find the target events acording to the provided indexes
     if strcmp('all', idxtargevent)
-         idxevent = Targev_k;
+        idxevent = posevent;
+    elseif strcmp('first', idxtargevent)
+        idxevent = posevent(1);
     else
-        if any(idxtargevent>length(Targev_k))
-            idxtargevent(idxtargevent>length(Targev_k)) = [];
-        end
-        if length(idxtargevent)<=length(Targev_k)
-            idxevent = Targev_k(idxtargevent);
-        else
-            idxevent = Targev_k(idxtargevent(1:length(Targev_k)));
-        end
+        idxevent = posevent(idxtargevent);
     end
     
     % Chane the evnts
@@ -123,9 +120,9 @@ for k=1:numel(Refev)
                     EEGout.event(iiev).(field) = [];
                 end
                 if isfield(EEGout,'epoch')
-                for iiep=1:length(EEGout.epoch)
-                    EEGout.epoch(iiep).(['event' field]) = repmat({[]},[1 length(EEGout.epoch(iiep).event)]);
-                end
+                    for iiep=1:length(EEGout.epoch)
+                        EEGout.epoch(iiep).(['event' field]) = repmat({[]},[1 length(EEGout.epoch(iiep).event)]);
+                    end
                 end
             end
             EEGout.event(idxevent(i)).(field) = newval_i;
@@ -137,15 +134,16 @@ for k=1:numel(Refev)
                     end
                 end
             end
-%             EEGout=pop_editeventvals(EEGout,'changefield',{idxevent(i) field newval_i});
+            %             EEGout=pop_editeventvals(EEGout,'changefield',{idxevent(i) field newval_i});
             
             nEvchange = nEvchange+1;
             
         end
     end
 end
+EEGout = eeg_checkset(EEGout);
 EEGout = eeg_checkset(EEGout, 'eventconsistency');
-EEGout = eeg_checkset(EEGout, 'checkur');
+% EEGout = eeg_checkset(EEGout, 'checkur');
 
 fprintf('\n')
 

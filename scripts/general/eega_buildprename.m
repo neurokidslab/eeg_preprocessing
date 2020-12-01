@@ -42,6 +42,10 @@ for i=1:2:length(Fnct)
             new = 'd_';
         case 'eega_ntdetrend'
             new = 'rd_';
+        case 'pop_resample'
+            new = sprintf('rs%d_',Fnct{i+1}{1});
+        case 'eega_resample'
+            new = sprintf('rs%d_',Fnct{i+1}{1});
         case 'eega_filter'
             if any(strcmp(Fnct{i+1},'minphase')) && Fnct{i+1}{find(strcmp(Fnct{i+1},'minphase'))+1}
                 causal = 'c';

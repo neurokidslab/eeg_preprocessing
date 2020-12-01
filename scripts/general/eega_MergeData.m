@@ -135,7 +135,12 @@ if ~isempty(subjects)
                 % Add the factors
                 for k=1:length(P.FactorField)
                     thefield = P.FactorField{k};
-                    dim2cat = ndims(EEG.(P.DataField{1}));
+                    if isempty(P.dim2cat) || length(P.dim2cat)<k
+                        dim2cat = ndims(EEG.(P.DataField{1}));
+                    else
+                        dim2cat = P.dim2cat(k);
+                    end
+                    
                     if S==1
                         if isempty(P.FactorFieldnames)
                             EEGALL.(thefield) = EEG.(thefield);

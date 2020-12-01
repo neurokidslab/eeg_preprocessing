@@ -64,6 +64,7 @@ if ~isempty(EEG.data)
                                 p_int,...
                                 varargin{:});
     
+    % mark the interpolated data                        
     if savecorrected
         if ~isfield(EEG.artifacts,'CCT')
             EEG.artifacts.CCT = false(size(EEG.data));

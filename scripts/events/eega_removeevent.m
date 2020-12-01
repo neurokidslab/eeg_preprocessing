@@ -78,7 +78,9 @@ if nisev~=0
         if isev(e)
             type{i} = EEG.event(e).type;
             latency(i) = EEG.event(e).latency/EEG.srate;
-            urevent(i) = EEG.event(e).urevent;
+            if isfield(EEG.event(e),'urevent')
+                urevent(i) = EEG.event(e).urevent;
+            end
             nievent(i) = e;
             i = i+1;
         end
@@ -92,8 +94,8 @@ if nisev~=0
         'VariableNames', {'Index' 'UR' 'Type' 'Latency' 'LatencyDiff'},...
         'RowNames',rawnames);
     
-    fprintf('The list of events to remove is: \n')
-    disp(tbl)
+%     fprintf('The list of events to remove is: \n')
+%     disp(tbl)
     if ischar(tormv) && strcmp(tormv,'all')
         ev2delet = 1:nisev;
     elseif isempty(tormv)

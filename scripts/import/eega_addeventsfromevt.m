@@ -97,19 +97,20 @@ end
 %% Add avents that do not exist in the EEGLAB structure
 
 
-% If there are not events add the first one in the event file
-if isempty(EEG.event)
-    EEG.event(1).type = Ed{1,id_code};
-    EEG.event(1).duration = Ed{1,id_dur} * EEG.srate;
-    EEG.event(1).latency =  Ed{1,id_onset} * EEG.srate;
-end
+% % If there are not events add the first one in the event file
+% if isempty(EEG.event)
+%     EEG.event(1).type = Ed{1,id_code};
+%     EEG.event(1).duration = Ed{1,id_dur};
+%     EEG.event(1).latency =  Ed{1,id_onset};  % in samples
+%     EEG = eeg_checkset(EEG);
+% end
   
 %get the type and latencies from the EEGLAB structure
 type = cell(length(EEG.event),1);
 lat = nan(length(EEG.event),1);
 for i=1:length(EEG.event)
     type{i} = EEG.event(i).type;
-    lat(i) = EEG.event(i).latency;
+    lat(i) = EEG.event(i).latency / EEG.srate;  % in seconds
 end
 
 %loop through the events in the event file
@@ -117,42 +118,57 @@ ncount = 0;
 for i=1:size(Ed,1)
     
     %check if the event exists in the EELAB structure
-    idx_type = strcmp(type, Ed(i,id_code));
-    idx_time = abs(lat - Ed{i,id_onset})<=latlim;
-    exists = any(idx_type==1 & idx_time==1);
-    
+    if ~isempty(type)
+        idx_type = strcmp(type, Ed(i,id_code));
+        idx_time = abs(lat - Ed{i,id_onset})<=latlim;
+        exists = any(idx_type==1 & idx_time==1);
+    else
+        exists = 0;
+    end
     if ~exists
         
         fprintf('Adding new event (n=%d)...\n',ncount+1);
 
-        %add an empty event a the end
-        fnames = fieldnames(EEG.event);
-        nfff = length(fnames);
-        fvals = cell(1,nfff);
-        
-        EEG = pop_editeventvals( EEG, 'insert', [1 fvals]);
-        
         %event number
-        evn = length(EEG.event);
+        evn = length(EEG.event)+1;
+        urevn = length(EEG.urevent)+1;
+        EEG.urevent(urevn).type = Ed{i,id_code};
+        EEG.urevent(urevn).latency = Ed{i,id_onset};
+        EEG.event(evn).type = Ed{i,id_code};
+        EEG.event(evn).duration = Ed{i,id_dur};
+        EEG.event(evn).latency =  Ed{i,id_onset};  % in samples
+        EEG.event(evn).urevent = urevn;  
+        EEG = eeg_checkset(EEG, 'eventconsistency');
+        EEG = eeg_checkset(EEG, 'checkur');
         
-        %get the extra values
-        ev_codes = cell(length(id_extraname),2);
-        for k=1:length(id_extraname)
-            ev_codes{k,1} = Ed{i,id_extraname(k)};
-            ev_codes{k,2} = Ed{i,id_extravals(k)};
-        end
-        
-        %store the values of the fields
-        ev_type = Ed{i,id_code};
-        ev_duration = Ed{i,id_dur} / EEG.srate;     % duration in seconds 
-        ev_latency = Ed{i,id_onset} / EEG.srate;    % latency in seconds 
-        
-        %modify the different fields (last latency to reorder at the end)
-        EEG.event(evn).codes = ev_codes;
-        EEG = pop_editeventvals( EEG, 'changefield', {evn 'type' ev_type});
-        EEG = pop_editeventvals( EEG, 'changefield', {evn 'duration' ev_duration});
-        EEG = pop_editeventvals( EEG, 'changefield', {evn 'latency' ev_latency});
-           
+%         %add an empty event a the end
+%         if isempty(EEG.event)
+%             fnames = fieldnames(EEG.event);
+%             nfff = length(fnames);
+%             fvals = cell(1,nfff);
+%         else
+%         end
+%         EEG = pop_editeventvals( EEG, 'insert', [length(EEG.event) fvals]);
+%         
+%         
+%         %get the extra values
+%         ev_codes = cell(length(id_extraname),2);
+%         for k=1:length(id_extraname)
+%             ev_codes{k,1} = Ed{i,id_extraname(k)};
+%             ev_codes{k,2} = Ed{i,id_extravals(k)};
+%         end
+%         
+%         %store the values of the fields
+%         ev_type = Ed{i,id_code};
+%         ev_duration = Ed{i,id_dur} / EEG.srate;     % duration in seconds 
+%         ev_latency = Ed{i,id_onset} / EEG.srate;    % latency in seconds 
+%         
+%         %modify the different fields (last latency to reorder at the end)
+%         EEG.event(evn).codes = ev_codes;
+%         EEG = pop_editeventvals( EEG, 'changefield', {evn 'type' ev_type});
+%         EEG = pop_editeventvals( EEG, 'changefield', {evn 'duration' ev_duration});
+%         EEG = pop_editeventvals( EEG, 'changefield', {evn 'latency' ev_latency});
+%            
         % update the counter
         ncount = ncount+1;
     end
@@ -160,9 +176,10 @@ end
 
 fprintf('--> %d new events were added\n',ncount);
 
-%% Check the structure
-EEG = eeg_checkset(EEG, 'eventconsistency');
-EEG = eeg_checkset(EEG, 'checkur');
+% %% Check the structure
+% EEG = eeg_checkset(EEG, 'eventconsistency');
+% EEG = eeg_checkset(EEG, 'checkur');
+% EEG = eeg_checkset(EEG);
 
 
 end

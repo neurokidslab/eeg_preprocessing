@@ -27,8 +27,8 @@ fprintf('### Target PCA ###\n')
 %% ------------------------------------------------------------------------
 %% Parameters
 savecorrected = 1;
-alltime = 0;
-allchannels = 0;
+alltime = 'nobadtime';
+allchannels = 'nobadch';
 idxrmv = [];
 for i=1:2:length(varargin)
     if strcmpi(varargin{i},'maxtime') || strcmpi(varargin{i},'masktime') || strcmpi(varargin{i},'wsize')
@@ -51,17 +51,25 @@ varargin(idxrmv) = [];
 
 %% ------------------------------------------------------------------------
 %% Interpolate
-if alltime
-    intertime=[];
-else
-    intertime=~EEG.artifacts.BT;
+switch alltime
+    case 'all'
+        intertime=[];
+    case 'nobadtime'
+        intertime=~EEG.artifacts.BT;
+    case 'badtime'
+        intertime=EEG.artifacts.BT;
 end
-if allchannels
-    interch=[];
-else
-    interch=~EEG.artifacts.BC;
+switch allchannels
+    case 'all'
+        interch=[];
+    case 'nobadch'
+        interch=~EEG.artifacts.BC;
+    case 'badch'
+        interch=EEG.artifacts.BC;
 end
 if ~isempty(EEG.data)
+    
+    % target PCA
     [ EEG.data, Interp ] = eega_tTargetPCAxEl( EEG.data,...
         EEG.artifacts.BCT,...
         intertime,...
@@ -69,7 +77,8 @@ if ~isempty(EEG.data)
         nSV,...
         vSV,...
         varargin{:});
-    
+
+    % mark the interpolated data                        
     if savecorrected
         if ~isfield(EEG.artifacts,'CCT')
             EEG.artifacts.CCT = false(size(EEG.data));

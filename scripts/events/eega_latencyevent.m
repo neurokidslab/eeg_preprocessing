@@ -84,8 +84,9 @@ for E = 1:numel(events)
         end       
     end
 end
+EEG = eeg_checkset(EEG);
 EEG = eeg_checkset(EEG, 'eventconsistency');
-EEG = eeg_checkset(EEG, 'checkur');
+% EEG = eeg_checkset(EEG, 'checkur');
 
 correction = correction/EEG.srate*1000;
 fprintf('The latency of %d events was corrected\n',iii)
