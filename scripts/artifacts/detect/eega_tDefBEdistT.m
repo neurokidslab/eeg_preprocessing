@@ -34,6 +34,7 @@ P.maxloops      = 5;
 P.plot          = 1;
 P.savefigure    = 0;
 P.where         = [];
+P.normdist      = 1;
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK
@@ -96,7 +97,9 @@ while ~ok && ci<=P.maxloops
     D = bsxfun(@minus,D,M);
     D = squeeze(sqrt(sum(D.^2,1)));
     % normalize the distance such that the variance and mean are equal across samples
-    D = (D - mean(D(:,~BE),2)) ./  std(D(:,~BE),[],2);
+    if P.normdist
+        D = (D - mean(D(:,~BE),2)) ./  std(D(:,~BE),[],2);
+    end
     
     TOT = nan(nEp,2);
     TOT(:,1) = mean(D,1)';

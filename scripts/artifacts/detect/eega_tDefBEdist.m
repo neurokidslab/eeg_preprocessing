@@ -1,21 +1,15 @@
 % -------------------------------------------------------------------------
-% This functions defines which epoch are bad based on the amount of
-% rejected data
+% This functions defines which epochs are bad based on the distance at each
+% sample of epoch i to the ERP
 %
-% INPUTS
+% INPUT
 % EEG   EEG structure
-% BadData   structure speficfing the maximun amount of bad data
-%   - limBCTa   maximun data rejected in BCT
-%   - limBTa    maximun data rejected in BT
-%   - limBCa    maximun data rejected in BC
-%   - limCCTa   maximun data corrected in CCT
-%   - limBCTr   maximun data rejected in BCT (relative limit)
-%   - limBTr    maximun data rejected in BT (relative limit)
-%   - limBCr    maximun data rejected in BC (relative limit)
-%   - limCCTr   maximun data corrected in CCT (relative limit)
+% maxMeanDist   threshold for the mean distance
+% maxMaxDist    threshold for the maximun distance
 %
 % OPTIONAL INPUTS
 %   - keeppre       keep previuos values
+%   - relative      relative (1) or absolute (0) threshold
 %   - where         time limits where to look for bad data
 %   - maxloops      maximun numbers of loops
 %   - plot          plot the rejection
@@ -27,42 +21,28 @@
 %
 % -------------------------------------------------------------------------
 
-function [ EEG, BE ] = eega_tDefBEbaddata( EEG, BadData, varargin )
 
-fprintf('### Identifying Bad Epochs ###\n' )
+function [ EEG, BE ] = eega_tDefBEdist( EEG, limDist, limBadDist, varargin )
+
+fprintf('### Identifying Bad Epochs Based on the Distance to the Mean ###\n' )
 
 %% ------------------------------------------------------------------------
 %% Parameters
 P.keeppre       = 1;
-P.log           = 0;
-P.maxloops      = 3;
-P.plot          = 0;
+P.relative      = 1;
+P.maxloops      = 5;
+P.plot          = 1;
 P.savefigure    = 0;
 P.where         = [];
+P.normdist      = 0;
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK
-    error('eega_tDefBEart: Non recognized inputs')
+    error('eega_tDefBEdistT: Non recognized inputs')
 end
-
-if ~isfield(BadData,'limBCTr')
-    BadData.limBCTr = [];
-end
-if ~isfield(BadData,'limBTr')
-    BadData.limBTr = [];
-end
-if ~isfield(BadData,'limBCr')
-    BadData.limBCr = [];
-end
-if ~isfield(BadData,'limCCTr')
-    BadData.limCCTr = [];
-end
-limRel = {BadData.limBCTr, BadData.limBTr, BadData.limBCr, BadData.limCCTr};
-limAbs = {BadData.limBCTa, BadData.limBTa, BadData.limBCa, BadData.limCCTa};
-
 
 %% ------------------------------------------------------------------------
-%% Identify bad epochs
+%% Identify bad epochs based on the distance to the mean
 nEl  = size(EEG.data,1);
 nS   = size(EEG.data,2);
 nEp  = size(EEG.data,3);
@@ -75,18 +55,6 @@ end
 if ~isfield(EEG.artifacts,'BEm')
     EEG.artifacts.BEm = false(1,1,nEp);
 end
-if ~isfield(EEG.artifacts,'BCT')
-    EEG.artifacts.BCT = false(nEl,nS,nEp);
-end
-if ~isfield(EEG.artifacts,'BT')
-    EEG.artifacts.BT = false(1,nS,nEp);
-end
-if ~isfield(EEG.artifacts,'BC')
-    EEG.artifacts.BC = false(nEl,1,nEp);
-end
-if ~isfield(EEG.artifacts,'CCT')
-    EEG.artifacts.CCT = false(nEl,nS,nEp);
-end
 
 % find the times to consider
 if isempty(P.where)
@@ -95,71 +63,85 @@ end
 idxtime = EEG.times>=P.where(1) & EEG.times<=P.where(2);
 nS = sum(idxtime);
 
-% find bad epochs
-ElBadAll = all(EEG.artifacts.BC,3);
-nElBadAll = sum(ElBadAll);
-nElAct = nEl - nElBadAll;
-TOT = nan(nEp,4);
-TOT(:,1) = squeeze(sum(sum(EEG.artifacts.BCT(~ElBadAll,idxtime,:),1),2) / (nS*nElAct));
-TOT(:,2) = squeeze(sum(EEG.artifacts.BT(:,idxtime,:),2) / nS);
-TOT(:,3) = squeeze(sum(EEG.artifacts.BC(~ElBadAll,:,:),1) / nElAct);
-TOT(:,4) = squeeze(sum(sum(EEG.artifacts.CCT(~ElBadAll,idxtime,:),1),2) / (nS*nElAct));
-if P.log
-    TOT(TOT(:,1)==0,1) = 1/ (nS*nElAct);
-    TOT(TOT(:,2)==0,2) = 1/ nS;
-    TOT(TOT(:,3)==0,3) = 1/ nElAct;
-    TOT(TOT(:,4)==0,4) = 1/ (nS*nElAct);
-    TOT = log(TOT);
-    for i=1:4
-        limAbs{i} = log(limAbs{i});
-    end
-end
+% reference data to calculate the distance
+dataref = bsxfun(@minus,EEG.data, mean(EEG.data,1));
 
+% obtain the mean epoch to calculate the distance from it 
+dataM = dataref;
+dataM(EEG.artifacts.BCT)=nan;
+
+% do not consider bad electrodes in the rejection
+ElBadAll = all(EEG.artifacts.BC,3);
+dataref(ElBadAll,:,:) = [];
+dataM(ElBadAll,:,:) = [];
+
+% remove times 
+dataref = dataref(:,idxtime,:);
+dataM = dataM(:,idxtime,:);
+
+
+%reject epochs having samples that are too far from the average
 BE = BEold(:) | EEG.artifacts.BEm(:);
 BEd = false(size(BE));
 ok=0;
 ci=1;
 while ~ok && ci<=P.maxloops
-    thresh = ones(1,4);
-    for i=1:4
-        if ~isempty(limRel{i})
-            P75 = prctile(TOT(~BE,i),75);
-            P25 = prctile(TOT(~BE,i),25);
-            thresh(i) = P75 + limRel{i} .* (P75-P25);
-            if ~isempty(limAbs{i}) && length(limAbs{i})==2
-                if thresh(i)<limAbs{i}(1); thresh(i) = limAbs{i}(1);
-                elseif thresh(i)>limAbs{i}(2); thresh(i) = limAbs{i}(2);
-                end
-            end
-        else
-            thresh(i) = limAbs{i}(1);
-        end
-    end
-    R = TOT > repmat(thresh,[nEp 1]);
     
-    if all( (any(R,2) | BE ) == BE) % check if new data was rejected
+    M = nanmean(dataM(:,:,~BE),3);
+    D = dataref;
+    % scale the mean based on the standard deviations
+    sdM = std(M,[],2);
+    sdD = std(reshape(D,[size(D,1) size(D,2)*size(D,3)]),[],2);
+    M = M .* sdD ./ sdM;
+    % compute the distance
+    D = bsxfun(@minus,D,M);
+    D = squeeze(sqrt(sum(D.^2,1)));
+    % normalize the distance such that the variance and mean are equal across samples
+    if P.normdist
+        D = (D - mean(D(:,~BE),2)) ./  std(D(:,~BE),[],2);
+    end
+    D = log(D);
+    
+    % threshold for the distance
+    if P.relative
+        P75 = prctile(D(:,~BE),75,2);
+        P25 = prctile(D(:,~BE),25,2);
+        threshD = P75 + limDist .* (P75-P25);
+    else
+        threshD = limDist;
+    end
+    RR = D > repmat(threshD,[1 size(D,2)]);
+    
+    % thrshold for the amount of data to far away
+    if limBadDist<=1
+        R = (sum(RR,1)/nS)>=limBadDist;
+    else
+        P75 = prctile(sum(RR,1)/nS,75);
+        P25 = prctile(sum(RR,1)/nS,25);
+        threshR = P75 + limBadDist .* (P75-P25);
+        R = (sum(RR,1)/nS)>=threshR;
+    end
+    R = R';
+    
+    % check if new data was rejected
+    if all( ( R | BE ) == BE) 
         ok=1;
     end
     
-    BEd = ( BEd | any(R,2) );
-    BE  = ( BE  | any(R,2) );
+    BEd = ( BEd | R );
+    BE  = ( BE  | R );
     
     ci=ci+1;
 end
+TOT = [mean(D,1)' sum(RR,1)'/nS];
 
 %% ------------------------------------------------------------------------
 %% Display rejected data
-BEnew = (BE(:) & ~BEold(:) & ~EEG.artifacts.BEm(:));
+BEnew=(BE(:) & ~BEold(:) & ~EEG.artifacts.BEm(:));
 
 fprintf('--> Rejected epochs by this algorithm: %03d out of %d : (%5.1f%% ) %s\n', sum(BEd), nEp, sum(BEd)/nEp*100, num2str(find(BEd(:)')) )
-fprintf('       - BCT threshold %4.3f, trials %d (%5.2f%%): %s\n', thresh(1), sum(R(:,1)), sum(R(:,1))/nEp*100, num2str(find(R(:,1)')) )
-fprintf('       - BT  threshold %4.3f, trials %d (%5.2f%%): %s\n', thresh(2), sum(R(:,2)), sum(R(:,2))/nEp*100, num2str(find(R(:,2)')) )
-fprintf('       - BC  threshold %4.3f, trials %d (%5.2f%%): %s\n', thresh(3), sum(R(:,3)), sum(R(:,3))/nEp*100, num2str(find(R(:,3)')) )
-fprintf('       - CCT threshold %4.3f, trials %d (%5.2f%%): %s\n', thresh(4), sum(R(:,4)), sum(R(:,4))/nEp*100, num2str(find(R(:,4)')) )
-
 fprintf('--> Total rejected epochs:             %03d out of %d (%5.1f%% ) %s\n', sum(BE), nEp, sum(BE)/nEp*100, num2str(find(BE(:)')) )
 fprintf('--> New rejected epochs:               %03d out of %d (%5.1f%% ) %s\n', sum(BEnew), nEp, sum(BEnew)/nEp*100, num2str(find(BEnew(:)')) )
-
 
 fprintf('\n')
 
@@ -172,26 +154,23 @@ EEG.reject.rejmanual = permute(EEG.artifacts.BE,[1 3 2]);
 %% ------------------------------------------------------------------------
 %% Plot
 if P.plot
-    plottrialsrej(BE,BEd,BEold,EEG.artifacts,TOT,thresh,P,EEG.filename,EEG.filepath)
+    plottrialsrej(BE,BEd,BEold,D,TOT,P,EEG.filename,EEG.filepath)    
 end
 
+
+
 end
+
 
 %% ------------------------------------------------------------------------
-
-function plottrialsrej(BE,BEd,BEold,Art,TOT,thresh,P,filename,filepath)
-
-D=Art.BCT;
-D(repmat(Art.BC,[1 size(D,2) 1]))=1;
-D(repmat(Art.BT,[size(D,1) 1 1]))=1;
-D = permute(sum(D,1),[2 3 1]);
+function plottrialsrej(BE,BEd,BEold,D,TOT,P,filename,filepath)
 
 AXxLim = [0 0.05 0.67 0.7 0.98 1];
 AXyLim = [0 0.1 0.90 1];
-axbox  = 0.055;
-axboxm  = 0.015;
+axbox  = 0.050;
+axboxm  = 0.020;
 
-ppp ={'BCT' 'BT' 'BC' 'CCT'};
+ppp ={'mean dist' '% of bad'};
 
 col_good    = [0.1953    0.8008    0.1953];
 col_new     = [1.0000    0.8398         0];
@@ -203,17 +182,24 @@ Enew    = BEd & ~BEold(:);
 Eold    = BEold(:) & ~BEd(:);
 Eboth   = BEold(:) & BEd(:);
 
+[~, trialssort] = sort(mean(D));
+D = D(:,trialssort);
+Egood = Egood(trialssort);
+Enew = Enew(trialssort);
+Eold = Eold(trialssort);
+Eboth = Eboth(trialssort);
+
 EEEE = [Egood Enew Eold Eboth];
 
-figure('Position',[100 100 1200 500])
+hf=figure('Position',[100 100 1200 500]);
 
-% trial distance
+% trials bad data
 % ---------------
-axes('Position', [AXxLim(2) AXyLim(2) AXxLim(3)-AXxLim(2) AXyLim(3)-AXyLim(2)])
+axes('Units','normalized','Position', [AXxLim(2) AXyLim(2) AXxLim(3)-AXxLim(2) AXyLim(3)-AXyLim(2)])
 
-% yLim = [0 ( prctile(D(:),75) + 2.5 * (prctile(D(:),75) - prctile(D(:),25)) )];
-yLim = [0 size(D,2)*0.35];
-
+p = prctile(D(:),[25 75]);
+yl = [p(1)-3*diff(p) p(2)+3*diff(p)];
+% yl = [3 6];
 triaslorder=[];
 L={};
 C=[];
@@ -252,7 +238,7 @@ Nlim=Nlim+0.5;
 Dorder = D(:,triaslorder);
 imagesc(Dorder')
 colormap(jet)
-caxis(yLim)
+caxis(yl)
 set(gca,'XTickLabel',[])
 % set(gca,'YTickLabel',[])
 xlabel('time')
@@ -266,7 +252,7 @@ for j=2:length(Nlim)
     H{j-1}=h(1);
 end
 legend([H{:}]',L{:},'Location','southoutside','Orientation','horizontal')
-title('bad data per epoch')
+title('Normalized distance to the average across epochs for each sample')
 colorbar
 
 % boxplots
@@ -280,16 +266,17 @@ for i=1:size(TOT,2)
     digood(BE)=nan;
     boxplot([di digood],'Labels',{'all' 'good'},'PlotStyle','compact', 'Colors' ,[0 0 0])
     set(gca,'XTickLabelRotation',90)
-%     set(gca,'YTickLabel',[])
-    line(xlim, [thresh(i) thresh(i)],'color',[1 0 0])
+    set(gca,'YTickLabel',[])
+%     line(xlim, [thresh(i) thresh(i)],'color',[1 0 0])
     title(ppp{i})
     X0=X0+(axbox+axboxm);
 end
 
 if P.plot && P.savefigure
     [~,figurename,~]=fileparts(filename);
-    figurename = ['rejBEart_' figurename ];
-    savefig(fullfile(filepath,figurename))
+    figurename = ['rejBEdist_' figurename '.fig'];
+    savefig(hf,fullfile(filepath,figurename))
 end
 end
+
 

@@ -38,7 +38,11 @@ fprintf('%d epochs aout of %d will be removed\n',nEp-nEpnew,nEp)
 %% Remove bad epochs
 for i=1:length(P.DataField)
     if isfield(EEG,P.DataField{i})
-        EEG.(P.DataField{i}) = EEG.(P.DataField{i})(:,:,goodEp);
+        if ndims(EEG.(P.DataField{i}))==3
+            EEG.(P.DataField{i}) = EEG.(P.DataField{i})(:,:,goodEp);
+        elseif ndims(EEG.(P.DataField{i}))==4
+            EEG.(P.DataField{i}) = EEG.(P.DataField{i})(:,:,:,goodEp);
+        end
     end
 end
 for i=1:length(P.FactorField)

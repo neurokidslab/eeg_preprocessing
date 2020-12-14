@@ -72,7 +72,7 @@ BTnew = BTold;
 BCBTnew = zeros(nEl,nS,nEp);
 BCBTnew(repmat(BCnew,[1 nS 1])) = 1;
 BCBTnew(repmat(BTnew,[nEl 1 1])) = 1;
-BCall = false(nEl,1);
+BCall = all(BCnew,3);
 if isfield(EEG.artifacts,'BCmanual')
     BCall(EEG.artifacts.BCmanual) = true;
     BCnew(EEG.artifacts.BCmanual,:,:) = true;

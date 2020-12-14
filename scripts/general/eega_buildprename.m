@@ -8,18 +8,20 @@ thef(2:2:end) = [];
 thef = thef(:);
 
 % functions options
-fopt = fieldnames(do);
-s_rmv = zeros(length(Fnct),1);
-for i=1:length(fopt)
-    fopti = fopt{i};
-    if any(strcmp(thef,fopti)) && ~do.(fopti)
-        % find the postition of each function
-        idx = find(strcmp(thef,fopti));
-        idx = [idx*2-1; idx*2];
-        s_rmv(idx) = 1;
+if ~isempty(do)
+    fopt = fieldnames(do);
+    s_rmv = zeros(length(Fnct),1);
+    for i=1:length(fopt)
+        fopti = fopt{i};
+        if any(strcmp(thef,fopti)) && ~do.(fopti)
+            % find the postition of each function
+            idx = find(strcmp(thef,fopti));
+            idx = [idx*2-1; idx*2];
+            s_rmv(idx) = 1;
+        end
     end
+    Fnct(logical(s_rmv)) = [];
 end
-Fnct(logical(s_rmv)) = [];
 
 %% Determine the pre-name for the file
 fnctname = [];
