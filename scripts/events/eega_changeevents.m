@@ -92,10 +92,11 @@ for k=1:numel(Refev)
     elseif strcmp('first', idxtargevent)
         idxevent = posevent(1);
     else
+        idxtargevent(idxtargevent>length(posevent)) = [];
         idxevent = posevent(idxtargevent);
     end
     
-    % Chane the evnts
+    % Change the events
     for i=1:length(idxevent)
         fprintf('Event number: %05.0d\n',idxevent(i))
         

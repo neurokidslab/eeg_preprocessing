@@ -128,8 +128,11 @@ for k=1:nF
 %             end
             if length(EEG.epoch(e).(EvFieldFactor{k}))>=eventnumber
                 v_ek = EEG.epoch(e).(EvFieldFactor{k})(eventnumber);
-            else
+            elseif ~isempty(EEG.epoch(e).(EvFieldFactor{k}))
                 v_ek = EEG.epoch(e).(EvFieldFactor{k})(end);
+            else
+                warning('no events in epoch %d',e)
+                v_ek = [];
             end
         end
         if iscell(v_ek)
@@ -155,7 +158,9 @@ F{nF+1}.val = cell(1,nEp);
 F{nF+1}.g = (1:nEp);
 for e = 1:nEp
     if isfield(EEG.epoch(e), 'eventEpoch')
-        F{nF+1}.val{e} = genvarname(EEG.epoch(e).eventEpoch{1});
+        if ~isempty(EEG.epoch(e).eventEpoch)
+            F{nF+1}.val{e} = genvarname(EEG.epoch(e).eventEpoch{1});
+        end
     else
         F{nF+1}.val{e} = genvarname(num2str(e));
     end
