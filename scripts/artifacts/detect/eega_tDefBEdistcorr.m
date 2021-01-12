@@ -5,7 +5,7 @@
 % INPUT
 % EEG   EEG structure
 % limDist   threshold for the mean distance
-% limBadDist    maximun proportion of time above the threshold
+% limCorr   threshold for the correlation
 %
 % OPTIONAL INPUTS
 %   - keeppre       keep previuos values
@@ -23,7 +23,7 @@
 % -------------------------------------------------------------------------
 
 
-function [ EEG, BE ] = eega_tDefBEdist( EEG, limDist, limBadDist, varargin )
+function [ EEG, BE ] = eega_tDefBEdistcorr( EEG, limDist, limCorr, varargin )
 
 fprintf('### Identifying Bad Epochs Based on the Distance to the Mean ###\n' )
 
@@ -124,30 +124,27 @@ while ~ok && ci<=P.maxloops
         D = (D - mean(D(:,~BE),2)) ./  std(D(:,~BE),[],2);
     end
     
-    % log transfomation
-    if strcmp(P.distance,'euclidean')
-        D = log(D);
+%     % log transfomation
+%     if strcmp(P.distance,'euclidean')
+%         D = log(D);
+%     end
+    
+    % correlation distance
+    Dcorr = nan(1,size(D,2));
+    Dm = mean(D,2);
+    for j=1:size(D,2)
+        Dcorr(j) = pdist(cat(1,Dm',D(:,j)'),'correlation');
     end
     
-    % threshold for the distance
+    % threshold for the correlation coeficient
     if P.relative
-        P75 = prctile(D(:,~BE),75,2);
-        P25 = prctile(D(:,~BE),25,2);
-        threshD = P75 + limDist .* (P75-P25);
+        P75 = prctile(Dcorr(:,~BE),75,2);
+        P25 = prctile(Dcorr(:,~BE),25,2);
+        threshDcorr = P75 + limDist .* (P75-P25);
     else
-        threshD = limDist;
+        threshDcorr = limDist;
     end
-    RR = D > repmat(threshD,[1 size(D,2)]);
-    
-    % thrshold for the amount of data to far away
-    if limBadDist<=1
-        R = (sum(RR,1)/nS)>=limBadDist;
-    else
-        P75 = prctile(sum(RR,1)/nS,75);
-        P25 = prctile(sum(RR,1)/nS,25);
-        threshR = P75 + limBadDist .* (P75-P25);
-        R = (sum(RR,1)/nS)>=threshR;
-    end
+    R = Dcorr > threshDcorr;
     R = R';
     
     % check if new data was rejected
@@ -160,7 +157,7 @@ while ~ok && ci<=P.maxloops
     
     ci=ci+1;
 end
-TOT = [mean(D,1)' sum(RR,1)'/nS];
+TOT = [mean(D,1)' Dcorr'];
 
 %% ------------------------------------------------------------------------
 %% Display rejected data
@@ -197,7 +194,7 @@ AXyLim = [0 0.1 0.90 1];
 axbox  = 0.050;
 axboxm  = 0.020;
 
-ppp ={'mean dist' '% of bad'};
+ppp ={'mean dist' 'corr dist'};
 
 col_good    = [0.1953    0.8008    0.1953];
 col_new     = [1.0000    0.8398         0];

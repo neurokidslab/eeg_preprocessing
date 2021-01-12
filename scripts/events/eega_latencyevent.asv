@@ -1,7 +1,9 @@
 % This function corrects the latency of the events indicated in "events"
 % using another event type, "eventT".
 %
-% Usually "eventsT" are DINs. %
+% Usually "events2" are DINs. If less than nevents2 are found the "events1"
+% it asks if the event should be removed
+%
 % INPUTS:
 %
 %   EEG         = EEGLab structure with the EEG data
