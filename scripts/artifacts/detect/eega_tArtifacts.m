@@ -27,9 +27,8 @@ StepsPostDetect = { 'eega_tRejChPercSmpl';...
 %% Parameters
 
 % default parameters
-cnf.FilterDo        = 1;
-cnf.fcutoffLp       = 15;
-cnf.fcutoffHp       = 0.5;
+cnf.FilterLp        = [];
+cnf.FilterHp        = [];
 cnf.KeepRejPre      = 1;
 cnf.KeepRejCause    = 0;
 cnf.MaxLoop         = [];
@@ -70,6 +69,7 @@ if isempty(cnf.MaxLoop)
     cnf.MaxLoop = unique(max(theloops));
 end
 
+cnf.FilterDo = ~isempty(cnf.FilterLp) | ~isempty(cnf.FilterHp);
 
 %% ========================================================================
 %% Show the info reharding the parameters
@@ -95,10 +95,11 @@ if cnf.KeepRejPre==0
 else
     fprintf('- The previous BCT will be kept \n')
 end
-if cnf.FilterDo==1
-    fprintf('- Data will be filtered before detection: %5.2f - %5.2f Hz\n',cnf.fcutoffHp, cnf.fcutoffLp)
-else
-    fprintf('- Data will not be filtered before detection\n')
+if ~isempty(cnf.FilterLp)
+    fprintf('- Data will be low-pass filtered before detection: %5.2f Hz\n',cnf.FilterLp)
+end
+if ~isempty(cnf.FilterHp)
+    fprintf('- Data will be low-pass filtered before detection: %5.2f Hz\n',cnf.FilterHp)
 end
 fprintf('- The rejection algorithms will be applied: \n')
 fprintf('   --> a maximun of %d times \n', cnf.MaxLoop)
@@ -151,10 +152,15 @@ else
 end
 
 %% ========================================================================
-%% Filter data previous to rejection if requeired
+%% Filter data before rejection if requeired
 if cnf.FilterDo    
     dat_orig = EEG.data;
-    EEG = pop_eegfiltnew(EEG, cnf.fcutoffHp, cnf.fcutoffLp, [], 0, [], [], 0);
+    if ~isempty(cnf.FilterLp)
+        EEG = pop_eegfiltnew(EEG, [], cnf.FilterLp, [], 0, [], [], 0);
+    end
+    if ~isempty(cnf.FilterHp)
+        EEG = pop_eegfiltnew(EEG, cnf.FilterHp, [], [], 0, [], [], 0);
+    end
 end
 
 %% ========================================================================

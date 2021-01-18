@@ -68,7 +68,7 @@ fprintf('Total data rejected %3.2f %%\n', new/n*100 )
 
 %% ------------------------------------------------------------------------
 %% Update the rejection matrix
-EEG.artifacts.BCT = EEG.artifacts.BCT | BCT;
+EEG.artifacts.BCT = BCTin | BCT;
 EEG.artifacts.summary = eega_summaryartifacts(EEG);
 
 fprintf('\n' )

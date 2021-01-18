@@ -31,6 +31,8 @@ if isfield(EEG,'artifacts')
 end
 
 % remove the urevent field
-EEG.event = rmfield(EEG.event,'urevent');
+if isfield(EEG.event,'urevent')
+    EEG.event = rmfield(EEG.event,'urevent');
+end
 
 end
