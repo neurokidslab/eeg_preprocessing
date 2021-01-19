@@ -153,7 +153,9 @@ idxjumps = diff(tt)>latlim;
 if sum(idxjumps)==0
     fprintf('Timings are aligned, nothing will be done. \n');
 elseif sum(idxjumps)==1
-    fprintf('Timing will be aligned based on the first event %s \n', event0);
+    for i=1:length(event0)
+        fprintf('Timing will be aligned based on the first event %s \n', event0{i});
+    end
 elseif sum(idxjumps)>1
     warning('Dissaliging observed at %d points!! The data will try to be realigned', sum(idxjumps))
 end
