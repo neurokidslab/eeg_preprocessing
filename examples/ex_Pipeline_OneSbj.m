@@ -83,9 +83,9 @@ EEG = eega_demean(EEG);
 EEG = pop_eegfiltnew(EEG, [], filt_lowpass,  [], 0, [], [], minphase);
 EEG = pop_eegfiltnew(EEG, filt_highpass, [], [], 0, [], [], minphase);
 %detect artifacts
-EEG = eega_tArtifacts(EEG, ArtPwrS, 'FilterDo', 0, 'KeepRejPre', 0);
-EEG = eega_tArtifacts(EEG, ArtMot1, 'FilterDo', 1, 'KeepRejPre', 1);
-EEG = eega_tArtifacts(EEG, ArtJump, 'FilterDo', 1, 'KeepRejPre', 1);
+EEG = eega_tArtifacts(EEG, ArtMot1, 'FilterLp', 15, 'KeepRejPre', 1);
+EEG = eega_tArtifacts(EEG, ArtPwrS, 'FilterLp', [], 'KeepRejPre', 1);
+EEG = eega_tArtifacts(EEG, ArtJump, 'FilterLp', 15, 'KeepRejPre', 1);
 %define bad channels and times
 EEG = eega_tDefBTBC(EEG, BTall.nbc,BCall.nbt,BCall.nbt,'keeppre',0,'minBadTime',BTall.minBadTime,'minGoodTime',BTall.minGoodTime,'maskTime',BTall.maskTime);
 %correct short bad segments of data (+ deman and high pass filter)
@@ -102,7 +102,7 @@ EEGforica = EEG;  % --> this data may be useful for ICA
 %spatially interpolate channels not working during the whole recording
 EEG = eega_tInterpSpatialEEG(EEG, Int.Spl.p,'pneigh',Int.Spl.pneigh);        
 %detect remaning artifacts
-EEG = eega_tArtifacts(EEG, ArtMot2, 'FilterDo', 1, 'KeepRejPre', 1);
+EEG = eega_tArtifacts(EEG, ArtMot2, 'FilterLp', [], 'KeepRejPre', 1);
 %define bad channels and times
 EEG = eega_tDefBTBC(EEG, BTall.nbc,BCall.nbt,BCall.nbt,'keeppre',0,'minBadTime',BTall.minBadTime,'minGoodTime',BTall.minGoodTime,'maskTime',BTall.maskTime);
 
@@ -139,7 +139,7 @@ EEG = eega_tDefBTBC(EEG, BTep.nbc,BCep.nbt,BCall.nbt,'keeppre',1,'minBadTime',BT
 %interpolate the bad channels for each epoch
 EEG = eega_tInterpSpatialEEG(EEG, Int.Spl.p,'pneigh', Int.Spl.pneigh);
 %check there are not big artifacts in the epoch data
-EEG = eega_tArtifacts(EEG, ArtMot2, 'FilterDo', 1, 'KeepRejPre', 1);
+EEG = eega_tArtifacts(EEG, ArtMot2, 'FilterLp', [], 'KeepRejPre', 1);
 %define bad channels and times
 EEG = eega_tDefBTBC(EEG, BTep.nbc,BCep.nbt,BCall.nbt,'keeppre',1,'minBadTime',BTep.minBadTime,'minGoodTime',BTep.minGoodTime,'maskTime',BTep.maskTime );
 %define bad epochs based on the amount of bad data, corrected data
