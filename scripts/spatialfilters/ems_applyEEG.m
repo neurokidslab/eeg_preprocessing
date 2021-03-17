@@ -1,4 +1,4 @@
-function [EEGsf, T0, Tx] = ems_multitrial_applyEEG(EEG, FactorCnd, CNDs, varargin)
+function [EEGsf, T0, Tx] = ems_applyEEG(EEG, FactorCnd, CNDs, varargin)
 
 fprintf('### EMS ###\n\n')
 
@@ -21,6 +21,7 @@ P.N2bias        = 0.75;
 P.times         = [];
 P.channels      = [];
 P.ptrimmean     = 0;
+P.keepdatafield = 0;
 
 % Get the optional parameters
 [P, OK, extrainput] = eega_getoptions(P, varargin);
@@ -111,8 +112,13 @@ if ~isempty(Y)  % if there is good data go on
         end
         fprintf('PCA: the explained variance by the %i first components is %4.2f\n',ki,exppca1)
         Y = dd * V;
-        Y = Y(:,1:ki)';
-        Y = reshape(Y,[ki, Ns, Nt ]);
+        Y = Y(:,1:ki);
+%         % prooject back to snesors space
+%         Y = Y * pinv(V(:,1:ki));
+%         Y = Y';
+        % reshape
+%         Y = reshape(Y,[Ne, Ns, Nt ]);
+        Y = reshape(Y',[ki, Ns, Nt ]);
         fprintf('\n');
     end
 
@@ -180,11 +186,11 @@ EEGsf.Filter        = theFilt;
 if isfield(EEG, 'FilterCNDs')
     EEGsf.FilterCNDs    = CNDs;
 end
+if isfield(EEG,'InfoSBJ')
+    EEGsf.InfoSBJ = EEG.InfoSBJ;
+end
 if isfield(EEG, 'chanlocs')
     EEGsf.chanlocs      = EEG.chanlocs(P.channels);
-end
-if isfield(EEG, 'chaninfo')
-    EEGsf.chaninfo      = EEG.chaninfo(P.channels);
 end
 if isfield(EEG, 'srate')
     EEGsf.srate         = EEG.srate;
@@ -192,15 +198,18 @@ end
 if isfield(EEG, 'times')
     EEGsf.times         = EEG.times(P.times);
 end
-if isfield(EEG, 'freq')
-    EEGsf.freq         = EEG.freq;
-end
+
 EEGsf.nbchan        = size(X,1);
 EEGsf.pnts          = size(X,2);
 EEGsf.trials        = size(X,3);
 EEGsf.W             = W;
 EEGsf.X             = X;
 EEGsf.F             = Favg;
+
+if P.keepdatafield
+    EEGsf.(P.DataField) = Y;
+    EEGsf.(['F' P.DataField]) = EEG.(P.FactorField);
+end
 
 
 end

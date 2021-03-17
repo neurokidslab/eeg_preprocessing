@@ -64,10 +64,10 @@ if ~isempty(EEG.data)
         % mark interpolated channels as good in BC
         EEG.artifacts.BC(all(Interp,2)) = 0;
         
-        % summary
-        EEG.artifacts.summary = eega_summaryartifacts(EEG);
     end
-    
+    if exist('eega_summarypp','file')==2
+        EEG = eega_summarypp(EEG);
+    end
 else
     fprintf('No data, nothing will be done\n')
 end

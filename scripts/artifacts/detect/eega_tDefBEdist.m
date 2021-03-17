@@ -35,6 +35,7 @@ P.maxloops      = 5;
 P.plot          = 1;
 P.savefigure    = 0;
 P.where         = [];
+P.rmvmean       = 0;
 P.normdist      = 0;
 P.hpfilter      = [];
 P.lpfilter      = [];
@@ -92,6 +93,10 @@ dataM(ElBadAll,:,:) = [];
 data = data(:,idxtime,:);
 dataM = dataM(:,idxtime,:);
 
+% remove the mean
+if P.rmvmean
+    dataM = dataM - mean(dataM,2);
+end
 
 %reject epochs having samples that are too far from the average
 BE = BEold(:) | EEG.artifacts.BEm(:);
@@ -175,8 +180,10 @@ fprintf('\n')
 %% ------------------------------------------------------------------------
 %% Update the rejection matrix
 EEG.artifacts.BE = permute(BE,[3 2 1]);
-EEG.artifacts.summary = eega_summaryartifacts(EEG);
 EEG.reject.rejmanual = permute(EEG.artifacts.BE,[1 3 2]);
+if exist('eega_summarypp','file')==2
+    EEG = eega_summarypp(EEG);
+end
 
 %% ------------------------------------------------------------------------
 %% Plot

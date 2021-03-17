@@ -56,7 +56,7 @@ end
 if isfield(EEG,'artifacts') && isfield(EEG.artifacts, 'BS')
     Tot(6) = 1;
     TotPos(6) = EEG.artifacts.BS;
-    PercPos(6) = 100;
+    PercPos(6) = TotPos(6)/Tot(6)*100;
 end
 
 % Summary table

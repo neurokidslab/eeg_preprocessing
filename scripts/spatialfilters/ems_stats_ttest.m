@@ -48,7 +48,9 @@ end
 
 idxtimes = (D.times>=P.latency(1)) & (D.times<=P.latency(2));
 D.(P.DataField)     = D.(P.DataField)(:,idxtimes,:);
-% D.W     = D.W(:,idxtimes,:);
+if isfield(D,'W')
+    D.W = D.W(:,idxtimes,:);
+end
 D.times = D.times(idxtimes);
 
 gA = find(strcmp(F{idxFcnd}.val{1},CNDs{1}));
@@ -63,8 +65,10 @@ D.(P.FactorField)=F;
 
 % calculate the grand average per condition
 Dgavg = eega_avgdatabyfactors(D,{P.FactorCnd},'DataField',P.DataField,'FactorField',P.FactorField,'Stats',1);
-% Dgavg.W = mean(Dgavg.W,3);
-% [Dgavg.W, Dgavg.W_stats.sd, Dgavg.W_stats.n, Dgavg.W_stats.error] = statistics(Dgavg.W,3);
+if isfield(D,'W')
+    Dgavg.W = mean(Dgavg.W,3);
+    [Dgavg.W, Dgavg.W_stats.sd, Dgavg.W_stats.n, Dgavg.W_stats.error] = summarystats(Dgavg.W,3);
+end
 
 % t-test for the comparisons
 Cmp.p = nan(size(D.(P.DataField),2),1);
@@ -85,14 +89,20 @@ Dout.Filter      = D.Filter;
 if isfield('InfoSBJ',D)
     Dout.InfoSBJ     = D.InfoSBJ;
 end
-Dout.chanlocs    = D.chanlocs;
-Dout.chaninfo    = D.chaninfo;
+if isfield(D,'chanlocs')
+    Dout.chanlocs    = D.chanlocs;
+end
+if isfield(D,'chaninfo')
+    Dout.chaninfo    = D.chaninfo;
+end
 Dout.srate       = D.srate;
 Dout.times       = D.times;
 Dout.nbchan      = size(Dgavg.(P.DataField),1);
 Dout.pnts        = size(Dgavg.(P.DataField),2);
 Dout.trials      = size(Dgavg.(P.DataField),3);
-% Dout.W           = Dgavg.W;
+if isfield(Dgavg,'W')
+    Dout.W           = Dgavg.W;
+end
 Dout.chanlocs    = D.chanlocs;
 % Dout.W_stats     = Dgavg.W_stats;
 Dout.(P.DataField)           = Dgavg.(P.DataField);

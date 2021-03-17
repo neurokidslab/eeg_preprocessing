@@ -109,8 +109,11 @@ end
 %% ------------------------------------------------------------------------
 %% Neightbours
 if electrodes<2
-    layout.label{1} = EEGALL.chanlocs(1).labels;
-    neighbours(1).label = EEGALL.chanlocs(1).labels;
+%     layout.label{1} = EEGALL.chanlocs(1).labels;
+%     neighbours(1).label = EEGALL.chanlocs(1).labels;
+%     neighbours(1).neighblabel = {''};
+    layout.label{1} = 'El';
+    neighbours(1).label = 'El';
     neighbours(1).neighblabel = {''};
 else
     X = [EEGALL.chanlocs.X];

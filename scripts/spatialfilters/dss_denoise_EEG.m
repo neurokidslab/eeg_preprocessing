@@ -62,7 +62,6 @@ else
 end
 [X, Y, W] = dss_denoise(d, keepnPCA1, nComps, tbias, tapply, twidx );
 EEG.(P.DataField) = X;
+
 fprintf('\n')
-
-
 end

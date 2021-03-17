@@ -38,7 +38,7 @@ cnf.Lim2RejSbj      = 1;
 % get extra inputs
 [cnf, OK, extrainput] = eega_getoptions(cnf, varargin);
 if ~OK
-    error('eega_tRejNetStation: Non recognized inputs')
+    error('eega_tArtifacts: Non recognized inputs')
 end
 
 % check the Art input structure
@@ -109,24 +109,26 @@ fprintf('\n')
 %% ========================================================================
 %% Get already rejected data if the rejection structure already exist
 if ~isfield(EEG, 'artifacts')
-    EEG.artifacts.algorithm.parameters=[];
-    EEG.artifacts.algorithm.stepname=[];
-    EEG.artifacts.algorithm.rejxstep=[];
-    EEG.artifacts.summary=[];
-    EEG.artifacts.BCT=false(nEl,nS,nEp);
-    EEG.artifacts.BC=false(nEl,1,nEp);
-    EEG.artifacts.BT=false(1,nS,nEp);
-    EEG.artifacts.BE=false(1,1,nEp);
-    EEG.artifacts.BS=false(1);
-    EEG.artifacts.BCmanual=[];
+    EEG.artifacts.algorithm.parameters = [];
+    EEG.artifacts.algorithm.stepname = [];
+    EEG.artifacts.algorithm.rejxstep = [];
+    EEG.artifacts.BCT = false(nEl,nS,nEp);
+    EEG.artifacts.BC = false(nEl,1,nEp);
+    EEG.artifacts.BCmanual = [];
+    EEG.artifacts.BT = false(1,nS,nEp);
+    EEG.artifacts.BE = false(1,1,nEp);
+    EEG.artifacts.BS = false(1);
 end
 if cnf.KeepRejPre==0
+    EEG.artifacts.algorithm.parameters = [];
+    EEG.artifacts.algorithm.stepname = [];
+    EEG.artifacts.algorithm.rejxstep = [];
     EEG.artifacts.BCT = false(nEl,nS,nEp);
-    EEG.artifacts.BCT=false(nEl,nS,nEp);
-    EEG.artifacts.BC=false(nEl,1,nEp);
-    EEG.artifacts.BT=false(1,nS,nEp);
-    EEG.artifacts.BE=false(1,1,nEp);
-    EEG.artifacts.BS=false(1);
+    EEG.artifacts.BCT = false(nEl,nS,nEp);
+    EEG.artifacts.BC = false(nEl,1,nEp);
+    EEG.artifacts.BT = false(1,nS,nEp);
+    EEG.artifacts.BE = false(1,1,nEp);
+    EEG.artifacts.BS = false(1);
 end
 
 BCT = EEG.artifacts.BCT;
@@ -276,14 +278,6 @@ end
 fprintf('\nEnd of loops \n')
 
 %% ========================================================================
-%% Update EEG
-EEG.artifacts.algorithm.parameters = parameters;
-EEG.artifacts.algorithm.stepname = stepname(logical(stepdone));
-if cnf.KeepRejCause
-    EEG.artifacts.BCTSr = BCTr(logical(stepdone));
-end
-    
-%% ========================================================================
 %% Original data back
 if cnf.FilterDo
     EEG.data = dat_orig;
@@ -309,9 +303,17 @@ fprintf('Remaining samples: %010d (%2.1f %%)\n', TotSmplRem, TotSmplRem/TotSmpl*
 fprintf('%s\n',repmat('\',[1 80]))
 fprintf('\n')
 
-EEG.artifacts.BS = sum(EEG.artifacts.BCT(:)/numel(EEG.artifacts.BCT(:)))>cnf.RejTolerance;
-EEG.artifacts.summary = eega_summaryartifacts(EEG);
-EEG.artifacts.algorithm.rejxstep = RejxStep;
-
+%% ========================================================================
+%% Update EEG
+EEG.artifacts.algorithm.parameters = cat(1,EEG.artifacts.algorithm.parameters,parameters(:));
+stepname = stepname(logical(stepdone));
+EEG.artifacts.algorithm.stepname = cat(1,EEG.artifacts.algorithm.stepname,stepname(:));
+EEG.artifacts.algorithm.rejxstep = cat(1,EEG.artifacts.algorithm.rejxstep,RejxStep(:));
+if exist('eega_summarypp','file')==2
+    EEG = eega_summarypp(EEG);
+end
+if cnf.KeepRejCause
+    EEG.artifacts.BCTSr = BCTr(logical(stepdone));
+end
 
 end

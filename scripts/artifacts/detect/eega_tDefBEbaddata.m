@@ -166,8 +166,10 @@ fprintf('\n')
 %% ------------------------------------------------------------------------
 %% Update the rejection matrix
 EEG.artifacts.BE = permute(BE,[3 2 1]);
-EEG.artifacts.summary = eega_summaryartifacts(EEG);
 EEG.reject.rejmanual = permute(EEG.artifacts.BE,[1 3 2]);
+if exist('eega_summarypp','file')==2
+    EEG = eega_summarypp(EEG);
+end
 
 %% ------------------------------------------------------------------------
 %% Plot

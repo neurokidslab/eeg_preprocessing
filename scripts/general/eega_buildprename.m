@@ -154,7 +154,11 @@ for i=1:2:length(Fnct)
                 new = sprintf('b%dto%d_', Fnct{i+1}{1}(1), Fnct{i+1}{1}(2));
             end
         case 'dss_denoise_EEG'
-            new = 'dss_';
+            if Fnct{i+1}{2}>=1
+                new = sprintf('%d-%d-dss_',Fnct{i+1}{2},Fnct{i+1}{1});
+            else
+                new = sprintf('%d-%3.2f-dss_',Fnct{i+1}{2},Fnct{i+1}{1});
+            end
         case 'eega_runmara'
             new = 'mara_';
         case 'eega_rmcompica'

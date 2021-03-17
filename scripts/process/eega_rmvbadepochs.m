@@ -32,7 +32,9 @@ else
 end
 goodEp = ~BE(:);
 nEpnew=sum(goodEp);
-fprintf('%d epochs aout of %d will be removed\n',nEp-nEpnew,nEp)
+if ~P.Silent
+    fprintf('%d epochs aout of %d will be removed\n',nEp-nEpnew,nEp)
+end
 
 %% ------------------------------------------------------------------------
 %% Remove bad epochs
@@ -89,5 +91,17 @@ EEG.trials = nEpnew;
 %         EEG.epoch(e).eventEpoch = Ep(e);
 %     end
 % end
+
+if ~P.Silent
+    fprintf('\n')
+end
+
+%% Update the summary structure
+if isfield(EEG,'summary') && ~isfield(EEG.summary,'epochall')
+    EEG.summary.epochall = EEG.summary.epoch;
+end
+if exist('eega_summarypp','file')==2
+    EEG = eega_summarypp(EEG);
+end
 
 end

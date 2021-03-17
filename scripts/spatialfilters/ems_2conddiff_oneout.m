@@ -191,17 +191,26 @@ if docov
     end
     
     % compute the filter
-%     w = pinv( c0 ) * DD;
-    w = pinv( (c0 - mean(c0(:))) / std(c0(:))) * ((DD - mean(DD)) / std(DD(:)));
+%     w = c0\DD;
+    w = pinv( c0 ) * DD;
     
 else
     w = DD;
 end
 
+
+% % check if there are channels at each sample for which the filter is too 
+% % high and set them as zero
+% for i=1:size(w,2)
+%     wi = w(:,i);
+%     p = prctile(wi(:),[25 75]);
+%     thrsh = 1.75*diff(p);
+%     idx = (wi>(p(2)+thrsh)) | (wi<(p(1)-thrsh));
+%     w(idx,i) = 0;
+% end
+
 % normalize the filter
-for ii=1:size(w,2)
-    w(:,ii)=w(:,ii)/norm(w(:,ii));
-end
+w = bsxfun(@rdivide,w,sqrt(sum(w.^2,1)));
 
 % projection
 for k=1:length(t2apply)

@@ -96,7 +96,7 @@ for iflt=1:Nfilt
         end
         pca1n(iflt) = ki;
         pca1exp(iflt) = exppca1;
-        fprintf('PCA1: the explained variance by the %i first components is %4.2f\n',ki,exppca1)
+        fprintf('- PCA1, the explained variance by the %i first components is %4.2f\n',ki,exppca1)
         Y0 = dd * V0;
         % ddred = Y0(:,1:K) * pinv(V0(:,1:K));
         Y0 = Y0(:,1:ki);
@@ -124,7 +124,7 @@ for iflt=1:Nfilt
         end
         pca2n(iflt) = nci;
         pca2exp(iflt) = exppca2;
-        fprintf('PCA2: the explained variance by the %i first components is %4.2f\n\n',nci,exppca2)
+        fprintf('- PCA2, the explained variance by the %i first components is %4.2f\n',nci,exppca2)
         
         % obtain the filter
         % Y1 = Y0 * V1;

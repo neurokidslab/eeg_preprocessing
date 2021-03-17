@@ -43,8 +43,17 @@ end
 %% Check some usefull stuff
 electrodes = size(EEGALL.(P.DataField),1);
 F = EEGALL.(P.FField);
-if isempty(EEGALL.chanlocs) && electrodes>1
+if (~isfield(EEGALL,'chanlocs') && electrodes>1)
     error('eega_ClstPerm: No channels localization')
+end
+if (isfield(EEGALL,'chanlocs') && isempty(EEGALL.chanlocs) && electrodes>1)
+    error('eega_ClstPerm: No channels localization')
+end
+if electrodes==1
+    EEGALL.chanlocs(1).labels = 'El';
+    EEGALL.chanlocs(1).X = 0;
+    EEGALL.chanlocs(1).Y = 0;
+    EEGALL.chanlocs(1).Z = 0;
 end
 
 %% ------------------------------------------------------------------------
@@ -107,8 +116,11 @@ end
 %% ------------------------------------------------------------------------
 %% Neightbours
 if electrodes<2
-    layout.label{1} = EEGALL.chanlocs(1).labels;
-    neighbours(1).label = EEGALL.chanlocs(1).labels;
+%     layout.label{1} = EEGALL.chanlocs(1).labels;
+%     neighbours(1).label = EEGALL.chanlocs(1).labels;
+%     neighbours(1).neighblabel = {''};
+    layout.label{1} = 'El';
+    neighbours(1).label = 'El';
     neighbours(1).neighblabel = {''};
 else
     X = [EEGALL.chanlocs.X];

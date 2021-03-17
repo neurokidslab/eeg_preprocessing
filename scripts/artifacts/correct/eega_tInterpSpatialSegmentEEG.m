@@ -72,9 +72,10 @@ if ~isempty(EEG.data)
         
         EEG.artifacts.BCT(Interp & EEG.artifacts.BCT) = 0;
         EEG.artifacts.CCT = EEG.artifacts.CCT | Interp;
-        EEG.artifacts.summary = eega_summaryartifacts(EEG);
     end
-    
+    if exist('eega_summarypp','file')==2
+        EEG = eega_summarypp(EEG);
+    end
 else
     fprintf('No data, nothing will be done\n')
 end

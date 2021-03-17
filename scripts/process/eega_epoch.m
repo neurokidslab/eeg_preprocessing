@@ -64,8 +64,13 @@ end
 %% Add as an event the orignal epoch number
 if isfield(EEG, 'epoch')
     for e=1:length(EEG.epoch)
-        EEG.epoch(e).eventEpoch = repmat({num2str(e)},[1 length(EEG.epoch(e).event)]);
+        EEG.epoch(e).eventEpoch = repmat({sprintf('%04d',e)},[1 length(EEG.epoch(e).event)]);
     end
+end
+
+%% Update the summary structure
+if exist('eega_summarypp','file')==2
+    EEG = eega_summarypp(EEG);
 end
 
 fprintf('\n')

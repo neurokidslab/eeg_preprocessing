@@ -213,15 +213,17 @@ newd = sum(all(BC,3) & all(~BCold,3));
 alld = sum(all(BC,3));
 fprintf('Total new bad channels ___________ %d\n', newd )
 fprintf('Total bad channels _______________ %d\n', alld )
-fprintf('Total manually rejected channels _ %d\n', length(EEG.artifacts.BCmanual) )
+% fprintf('Total manually rejected channels _ %d\n', length(EEG.artifacts.BCmanual) )
 
 %% ------------------------------------------------------------------------
 %% Update the rejection matrix
 EEG.artifacts.BT = BT;
 EEG.artifacts.BC = BC;
-EEG.artifacts.summary = eega_summaryartifacts(EEG);
 EEG.reject.rejmanualE = permute(EEG.artifacts.BC,[1 3 2]);
 fprintf('\n')
+if exist('eega_summarypp','file')==2
+    EEG = eega_summarypp(EEG);
+end
 
 %% ------------------------------------------------------------------------
 %% Plot the rejection matrix

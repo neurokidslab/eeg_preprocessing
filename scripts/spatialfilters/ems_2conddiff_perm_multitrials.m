@@ -148,13 +148,23 @@ if numel(docov)>1
     end
 end
 
+% normalize
+normalizedata = 0;
+if normalizedata
+    mu = mean(reshape(data,size(data,1),[]),2);
+    var = std(reshape(data,size(data,1),[]),0,2);
+    datan = (data - mu) ./ var;
+else
+    datan = data;
+end
+
 % average response (bias to phase locked signal)
 if ptrimmean~=0
-    DA = trimmean(data(:,:,t2biasA),ptrimmean,3);
-    DB = trimmean(data(:,:,t2biasB),ptrimmean,3);
+    DA = trimmean(datan(:,:,t2biasA),ptrimmean,3);
+    DB = trimmean(datan(:,:,t2biasB),ptrimmean,3);
 else
-    DA = mean(data(:,:,t2biasA),3);
-    DB = mean(data(:,:,t2biasB),3);
+    DA = mean(datan(:,:,t2biasA),3);
+    DB = mean(datan(:,:,t2biasB),3);
 end
 DDIFF = DA - DB;
 
@@ -162,9 +172,9 @@ if docov
     
     if isempty(c0)
         % covariance matrix for the noise
-        ddA=permute(data(:,timecov0,t2biasA),[2 1 3]);
+        ddA=permute(datan(:,timecov0,t2biasA),[2 1 3]);
         ddA=bsxfun(@minus,ddA,mean(ddA,3));
-        ddB=permute(data(:,timecov0,t2biasB),[2 1 3]);
+        ddB=permute(datan(:,timecov0,t2biasB),[2 1 3]);
         ddB=bsxfun(@minus,ddB,mean(ddB,3));
         c0=real( nt_cov(cat(3,ddA,ddB)) );
     end
@@ -178,9 +188,7 @@ else
 end
 
 % normalize the filter
-for ii=1:size(w,2)
-    w(:,ii)=w(:,ii)/norm(w(:,ii));
-end
+w = bsxfun(@rdivide,w,sqrt(sum(w.^2,1)));
 
 % projection
 if ptrimmean~=0
