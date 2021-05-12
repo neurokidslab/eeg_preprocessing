@@ -9,6 +9,7 @@ function EEG = eega_tArtifacts( EEG, Art, varargin )
 
 % possible steps to detect artifacts
 StepsDetect = { 'eega_tRejPwr',...
+                'eega_tRejCorrCh',...
                 'eega_tRejTimeVar',...
                 'eega_tRejAmp',...
                 'eega_tRejRunningAvg',...
@@ -167,13 +168,11 @@ end
 
 %% ========================================================================
 %% Reject based on the different algorithms
-stepname{1} = 'Start';
-stepdone(1) = 1;
-parameters{1} = [];
-RejxStep = zeros(nSteps+1,1);
-RejxStepNew = zeros(nSteps+1,1);
-RejxStep(1) = sum(BCT(:));
-RejxStepNew(1) = RejxStep(1);
+stepname = cell(nSteps,1);
+stepdone = false(nSteps,1);
+parameters = cell(nSteps,1);
+RejxStep = zeros(nSteps,1);
+RejxStepNew = zeros(nSteps,1);
 ok = 0;
 loop = 0;
 
@@ -195,7 +194,7 @@ while ~ok
             fhandle = str2func(thealgh);
             
             fprintf('%s\n',repmat('-',[1 30]))
-            fprintf('Rejection step % 2d: %s\n\n',step-1,thealgh)
+            fprintf('Rejection step % 2d: %s\n\n',step,thealgh)
             
             [ ~, bct ] = fhandle( EEG, inputs{:});
             
@@ -233,9 +232,9 @@ while ~ok
             fhandle = str2func(thealgh);
             
             fprintf('%s\n',repmat('-',[1 30]))
-            fprintf('Rejection step % 2d: %s\n\n',step-1,thealgh)
+            fprintf('Rejection step % 2d: %s\n\n',step,thealgh)
             
-            [ EEG, change ] = fhandle( EEG, inputs{:});
+            [ EEG, change ] = fhandle( EEG, inputs{:},'updatesummary',0,'updatealgorithm',0);
             
             nsmplchange = sum(change(:));
             RejxStep(step) = nsmplchange;
@@ -265,7 +264,7 @@ while ~ok
     fprintf('%s\n',repmat('-',[1 30]))
     fprintf('NEW DATA REJECTED LOOP %d: %8.4f %%\n',loop, newrej)
     fprintf('%s\n',repmat('-',[1 30]))
-    if newrej <= cnf.RejTolerance
+    if (cnf.RejTolerance ~= 0) && (newrej <= cnf.RejTolerance)
         ok=1;        
     end
     if loop==cnf.MaxLoop
@@ -305,10 +304,10 @@ fprintf('\n')
 
 %% ========================================================================
 %% Update EEG
-EEG.artifacts.algorithm.parameters = cat(1,EEG.artifacts.algorithm.parameters,parameters(:));
+EEG.artifacts.algorithm.parameters = cat(1,EEG.artifacts.algorithm.parameters(:),parameters(:));
 stepname = stepname(logical(stepdone));
-EEG.artifacts.algorithm.stepname = cat(1,EEG.artifacts.algorithm.stepname,stepname(:));
-EEG.artifacts.algorithm.rejxstep = cat(1,EEG.artifacts.algorithm.rejxstep,RejxStep(:));
+EEG.artifacts.algorithm.stepname = cat(1,EEG.artifacts.algorithm.stepname(:),stepname(:));
+EEG.artifacts.algorithm.rejxstep = cat(1,EEG.artifacts.algorithm.rejxstep(:),RejxStep(:));
 if exist('eega_summarypp','file')==2
     EEG = eega_summarypp(EEG);
 end

@@ -29,14 +29,18 @@ fprintf('### Rejecting based on the running average algorithm ###\n' )
 
 %% ------------------------------------------------------------------------
 %% Parameters
-P.thresh_fa = 2;
-P.thresh_da = 2;
+P.thresh_fa = 3;
+P.thresh_da = 3;
 P.refdata = 0;
 P.refbaddata = 'none'; % 'replacebynan' / 'none' / 'zero'
 P.dozscore = 0;
 P.relative = 1;
 P.xelectrode = 1;
-P.mask = 0;
+P.mask = 0.05;
+
+P.updateBCT = 1;
+P.updatesummary = 1;
+P.updatealgorithm = 1;
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK
@@ -79,14 +83,9 @@ fprintf('\n')
 
 
 %% ------------------------------------------------------------------------
-%% Get data
-nEl = size(EEG.data,1);
-nS = size(EEG.data,2);
-nEp = size(EEG.data,3);
-
-if ~isfield(EEG, 'artifacts') || ~isfield(EEG.artifacts, 'BCT')
-    EEG.artifacts.BCT = false(nEl,nS,nEp);
-end
+%% Get data and check that the artifact structure exists 
+[nEl, nS, nEp] = size(EEG.data);
+EEG = eeg_checkart(EEG);
 
 %% ------------------------------------------------------------------------
 %% Reference data
@@ -208,9 +207,19 @@ BCT = BCT_fast | BCT_diff;
 
 %% ------------------------------------------------------------------------
 %% Update the rejection matrix
-EEG.artifacts.BCT = EEG.artifacts.BCT | BCT;
-EEG.artifacts.summary = eega_summaryartifacts(EEG);
-
+if P.updateBCT
+    EEG.artifacts.BCT = EEG.artifacts.BCT | BCT;
+end
+if P.updatesummary
+    EEG.artifacts.summary = eega_summaryartifacts(EEG);
+end
+if P.updatealgorithm
+    EEG.artifacts.algorithm.parameters = cat(1,EEG.artifacts.algorithm.parameters(:),{P});
+    f = dbstack;
+    EEG.artifacts.algorithm.stepname = cat(1,EEG.artifacts.algorithm.stepname(:),{f(1).name});
+    EEG.artifacts.algorithm.rejxstep = cat(1,EEG.artifacts.algorithm.rejxstep(:),sum(BCT(:)));
+end
+    
 %% ------------------------------------------------------------------------
 %% Data back
 if P.dozscore

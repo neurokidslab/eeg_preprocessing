@@ -46,9 +46,11 @@ end
 
 %% ------------------------------------------------------------------------
 %% normalize the data
+normel = nan(Ne,1);
 for i=1:Ne
     d = data(i,:,:);
-    d = d(:)/norm(d(:));
+    normel(i) = norm(d(:));
+    d = d(:)/normel(i);
     data(i,:,:) = reshape(d,[1 Ns Nt]);
 end
 
@@ -156,6 +158,11 @@ if Nc<=1
     W(:,idcm,:) = [];
     Y(idcm,:,:) = [];
 end
+
+% multiply by the normalization factor
+X = X .* repmat(normel,[1,Ns,Nt]);
+
+% summary
 summ.pca1n = pca1n;
 summ.pca1exp = pca1exp;
 summ.pca2n = pca2n;

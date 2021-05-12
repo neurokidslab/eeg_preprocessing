@@ -8,7 +8,7 @@
 %   eventT      = event indicating the correct latency
 %   events      = cell array of strings with the events to correct
 %   correctEvT  = number of requiered eventT after the event. if it's not
-%               provided one is used
+%               provided this is not checked
 %
 % OUTPUT:
 %

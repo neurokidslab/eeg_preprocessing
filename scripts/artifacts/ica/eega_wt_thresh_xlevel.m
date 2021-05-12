@@ -32,6 +32,7 @@ function [wIC] = eega_wt_thresh_xlevel(IC, varargin)
 % are transformed back to data space the artifacts are obtained and can be
 % remove from the data before applying ICA another time
 % It uses "coif5" as wavelet family 
+%
 % By Ana Flo June 23th 2020
 %---------------------------------------------------------------------------------------
 

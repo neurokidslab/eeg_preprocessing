@@ -4,8 +4,8 @@
 %
 % INPUT
 % EEG   EEG structure
-% maxMeanDist   threshold for the mean distance
-% maxMaxDist    threshold for the maximun distance
+% limDist   threshold for the mean distance
+% limBadDist    maximun proportion of time above the threshold
 %
 % OPTIONAL INPUTS
 %   - keeppre       keep previuos values
@@ -14,6 +14,7 @@
 %   - maxloops      maximun numbers of loops
 %   - plot          plot the rejection
 %   - savefigure    save the figure with the rejection
+%   - filter        filter the data before omputing
 %
 % OUTPUTS
 %   EEG     output data
@@ -22,7 +23,7 @@
 % -------------------------------------------------------------------------
 
 
-function [ EEG, BE ] = eega_tDefBEdistT( EEG, maxMeanDist, maxMaxDist, varargin )
+function [ EEG, BE ] = eega_tDefBEdist( EEG, limDist, limBadDist, varargin )
 
 fprintf('### Identifying Bad Epochs Based on the Distance to the Mean ###\n' )
 
@@ -31,10 +32,14 @@ fprintf('### Identifying Bad Epochs Based on the Distance to the Mean ###\n' )
 P.keeppre       = 1;
 P.relative      = 1;
 P.maxloops      = 5;
-P.plot          = 1;
+P.plot          = 0;
 P.savefigure    = 0;
 P.where         = [];
-P.normdist      = 1;
+P.rmvmean       = 0;
+P.normdist      = 0;
+P.hpfilter      = [];
+P.lpfilter      = [];
+P.distance      = 'euclidean';
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK
@@ -63,22 +68,35 @@ end
 idxtime = EEG.times>=P.where(1) & EEG.times<=P.where(2);
 nS = sum(idxtime);
 
+% high pass filter if necessary
+if ~isempty(P.lpfilter) || ~isempty(P.hpfilter)
+    EEGf = pop_eegfiltnew(EEG, P.hpfilter, P.lpfilter,[], 0, [], [], 0);
+    data = EEGf.data;
+    clear EEGf
+else
+    data = EEG.data;
+end
+
 % reference data to calculate the distance
-dataref = bsxfun(@minus,EEG.data, mean(EEG.data,1));
+data = bsxfun(@minus,data, mean(data,1));
 
 % obtain the mean epoch to calculate the distance from it 
-dataM = dataref;
+dataM = data;
 dataM(EEG.artifacts.BCT)=nan;
 
 % do not consider bad electrodes in the rejection
 ElBadAll = all(EEG.artifacts.BC,3);
-dataref(ElBadAll,:,:) = [];
+data(ElBadAll,:,:) = [];
 dataM(ElBadAll,:,:) = [];
 
 % remove times 
-dataref = dataref(:,idxtime,:);
+data = data(:,idxtime,:);
 dataM = dataM(:,idxtime,:);
 
+% remove the mean
+if P.rmvmean
+    dataM = dataM - mean(dataM,2);
+end
 
 %reject epochs having samples that are too far from the average
 BE = BEold(:) | EEG.artifacts.BEm(:);
@@ -88,51 +106,87 @@ ci=1;
 while ~ok && ci<=P.maxloops
     
     M = nanmean(dataM(:,:,~BE),3);
-    D = dataref;
-    % scale the mean based on the standard deviations
+
+    % scale the mean based on the standard deviations (otherwise the mean and the single trila data have differnt amplitudes)
     sdM = std(M,[],2);
-    sdD = std(reshape(D,[size(D,1) size(D,2)*size(D,3)]),[],2);
+    sdD = std(reshape(data,[size(data,1) size(data,2)*size(data,3)]),[],2);
     M = M .* sdD ./ sdM;
     % compute the distance
-    D = bsxfun(@minus,D,M);
-    D = squeeze(sqrt(sum(D.^2,1)));
+    if strcmp(P.distance,'euclidean')
+        D = bsxfun(@minus,data,M);
+        D = squeeze(sqrt(sum(D.^2,1)));
+    else
+        D = nan(size(data,2),size(data,3));
+        for i=1:size(data,2)
+            for j=1:size(data,3)
+                D(i,j) = pdist(cat(1,data(:,i,j)',M(:,i)'),P.distance);
+            end
+        end
+    end
+    
     % normalize the distance such that the variance and mean are equal across samples
     if P.normdist
         D = (D - mean(D(:,~BE),2)) ./  std(D(:,~BE),[],2);
     end
     
-    TOT = nan(nEp,2);
-    TOT(:,1) = mean(D,1)';
-    TOT(:,2) = max(D,[],1)';
-    
-    if P.relative
-        P75 = prctile(TOT(~BE,:),75);
-        P25 = prctile(TOT(~BE,:),25);
-        thresh = P75 + [maxMeanDist, maxMaxDist] .* (P75-P25);
-    else
-        thresh = [maxMeanDist, maxMaxDist];
+    % log transfomation
+    if strcmp(P.distance,'euclidean')
+        D = log(D);
     end
     
-    R = TOT > repmat(thresh,[nEp 1]);
+    % threshold for the distance
+    if P.relative
+        P75 = prctile(D(:,~BE),75,2);
+        P25 = prctile(D(:,~BE),25,2);
+        threshD = P75 + limDist .* (P75-P25);
+    else
+        threshD = limDist;
+    end
+    RR = D > repmat(threshD,[1 size(D,2)]);
     
-    if all( (any(R,2) | BE ) == BE) % check if new data was rejected
+    % thrshold for the mean distance
+    Dm = mean(D,1)';
+    if P.relative
+        P75 = prctile(Dm(~BE),75,1);
+        P25 = prctile(Dm(~BE),25,1);
+        threshDm = P75 + limDist .* (P75-P25);
+    else
+        threshDm = limDist;
+    end
+    Rm = Dm > threshDm;
+    
+    % thrshold for the amount of data too far away
+    if limBadDist<=1
+        Rt = (sum(RR,1)/nS)>=limBadDist;
+    else
+        P75 = prctile(sum(RR,1)/nS,75);
+        P25 = prctile(sum(RR,1)/nS,25);
+        threshR = P75 + limBadDist .* (P75-P25);
+        Rt = (sum(RR,1)/nS)>=threshR;
+    end
+    Rt = Rt';
+    
+    % Rejection vector
+%     R = Rt | Rm;
+    R = Rt;
+    
+    % check if new data was rejected
+    if all( ( R | BE ) == BE) 
         ok=1;
     end
     
-    BEd = ( BEd | any(R,2) );
-    BE  = ( BE  | any(R,2) );
+    BEd = ( BEd | R );
+    BE  = ( BE  | R );
     
     ci=ci+1;
 end
+TOT = [mean(D,1)' sum(RR,1)'/nS];
 
 %% ------------------------------------------------------------------------
 %% Display rejected data
 BEnew=(BE(:) & ~BEold(:) & ~EEG.artifacts.BEm(:));
 
 fprintf('--> Rejected epochs by this algorithm: %03d out of %d : (%5.1f%% ) %s\n', sum(BEd), nEp, sum(BEd)/nEp*100, num2str(find(BEd(:)')) )
-fprintf('       - Mean distance threshold %4.1f, %d (%5.2f%%): %s\n', thresh(1), sum(R(:,1)), sum(R(:,1))/nEp*100, num2str(find(R(:,1)')) )
-fprintf('       - Max distance  threshold %4.1f, %d (%5.2f%%): %s\n', thresh(2), sum(R(:,2)), sum(R(:,2))/nEp*100, num2str(find(R(:,2)')) )
-
 fprintf('--> Total rejected epochs:             %03d out of %d (%5.1f%% ) %s\n', sum(BE), nEp, sum(BE)/nEp*100, num2str(find(BE(:)')) )
 fprintf('--> New rejected epochs:               %03d out of %d (%5.1f%% ) %s\n', sum(BEnew), nEp, sum(BEnew)/nEp*100, num2str(find(BEnew(:)')) )
 
@@ -141,13 +195,15 @@ fprintf('\n')
 %% ------------------------------------------------------------------------
 %% Update the rejection matrix
 EEG.artifacts.BE = permute(BE,[3 2 1]);
-EEG.artifacts.summary = eega_summaryartifacts(EEG);
 EEG.reject.rejmanual = permute(EEG.artifacts.BE,[1 3 2]);
+if exist('eega_summarypp','file')==2
+    EEG = eega_summarypp(EEG);
+end
 
 %% ------------------------------------------------------------------------
 %% Plot
 if P.plot
-    plottrialsrej(BE,BEd,BEold,D,TOT,thresh,P,EEG.filename,EEG.filepath)    
+    plottrialsrej(BE,BEd,BEold,D,TOT,P,EEG.filename,EEG.filepath)    
 end
 
 
@@ -156,14 +212,14 @@ end
 
 
 %% ------------------------------------------------------------------------
-function plottrialsrej(BE,BEd,BEold,D,TOT,thresh,P,filename,filepath)
+function plottrialsrej(BE,BEd,BEold,D,TOT,P,filename,filepath)
 
 AXxLim = [0 0.05 0.67 0.7 0.98 1];
 AXyLim = [0 0.1 0.90 1];
 axbox  = 0.050;
 axboxm  = 0.020;
 
-ppp ={'mean dist' 'max dist'};
+ppp ={'mean dist' '% of bad'};
 
 col_good    = [0.1953    0.8008    0.1953];
 col_new     = [1.0000    0.8398         0];
@@ -259,8 +315,8 @@ for i=1:size(TOT,2)
     digood(BE)=nan;
     boxplot([di digood],'Labels',{'all' 'good'},'PlotStyle','compact', 'Colors' ,[0 0 0])
     set(gca,'XTickLabelRotation',90)
-    set(gca,'YTickLabel',[])
-    line(xlim, [thresh(i) thresh(i)],'color',[1 0 0])
+    % set(gca,'YTickLabel',[])
+%     line(xlim, [thresh(i) thresh(i)],'color',[1 0 0])
     title(ppp{i})
     X0=X0+(axbox+axboxm);
 end

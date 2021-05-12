@@ -50,12 +50,12 @@ end
 
 %% ------------------------------------------------------------------------
 %% Parameters
-P.silent        = 0;
-P.maxTime       = 0.200;
+P.maxTime       = 25;
 P.maskTime      = 0;
+P.order         = 3; % order of polynomial to fit the trend if P.splicemethod = 4
+P.silent        = 0;
 P.splicemethod  = 1; % 
 P.wsize         = 1000; % number of samples to mask the bad segment to detrend if P.splicemethod = 4
-P.order         = 3; % order of polynomial to fit the trend if P.splicemethod = 4
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK

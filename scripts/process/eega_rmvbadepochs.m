@@ -97,9 +97,6 @@ if ~P.Silent
 end
 
 %% Update the summary structure
-if isfield(EEG,'summary') && ~isfield(EEG.summary,'epochall')
-    EEG.summary.epochall = EEG.summary.epoch;
-end
 if exist('eega_summarypp','file')==2
     EEG = eega_summarypp(EEG);
 end

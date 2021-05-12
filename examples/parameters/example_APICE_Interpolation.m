@@ -1,13 +1,11 @@
-function Int = Interpolation
+function Int = example_APICE_Interpolation
 
 %% Artifacts Correction by PCA
 Int.PCA.maxTime         = 0.100;
 Int.PCA.nSV             = [];
 Int.PCA.vSV             = 0.90;
-Int.PCA.splicemethod    = 1;   % 0 | 2 | 3 | 4
+Int.PCA.splicemethod    = 1;   % 0 / 1 / 2 / 3
 Int.PCA.maskTime        = 0.050;
-Int.PCA.wsize           = 4;  
-Int.PCA.order           = 1; 
 
 %% Artifacts Correction by spline interpolation
 Int.Spl.p               = 0.50;    % a bit bigger than the limit defining BT to make the interpolation faster

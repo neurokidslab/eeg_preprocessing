@@ -1,6 +1,6 @@
 % -------------------------------------------------------------------------
 % This functions defines which epochs are bad based on the distance at each
-% channel of epoch i to the ERP
+% sample of epoch i to the ERP
 %
 % INPUT
 % EEG   EEG structure
@@ -21,7 +21,8 @@
 %
 % -------------------------------------------------------------------------
 
-function [ EEG, BE ] = eega_tDefBEdistE( EEG, maxMeanDist, maxMaxDist, varargin )
+
+function [ EEG, BE ] = eega_tDefBEdistMaxMean( EEG, maxMeanDist, maxMaxDist, varargin )
 
 fprintf('### Identifying Bad Epochs Based on the Distance to the Mean ###\n' )
 
@@ -37,7 +38,7 @@ P.normdist      = 1;
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK
-    error('eega_tDefBEdistE: Non recognized inputs')
+    error('eega_tDefBEdistT: Non recognized inputs')
 end
 
 %% ------------------------------------------------------------------------
@@ -65,7 +66,7 @@ nS = sum(idxtime);
 % reference data to calculate the distance
 dataref = bsxfun(@minus,EEG.data, mean(EEG.data,1));
 
-% obtain the data to compute the mean epoch  
+% obtain the mean epoch to calculate the distance from it 
 dataM = dataref;
 dataM(EEG.artifacts.BCT)=nan;
 
@@ -78,7 +79,8 @@ dataM(ElBadAll,:,:) = [];
 dataref = dataref(:,idxtime,:);
 dataM = dataM(:,idxtime,:);
 
-%reject epochs having electrodes that are too far from the average 
+
+%reject epochs having samples that are too far from the average
 BE = BEold(:) | EEG.artifacts.BEm(:);
 BEd = false(size(BE));
 ok=0;
@@ -93,8 +95,8 @@ while ~ok && ci<=P.maxloops
     M = M .* sdD ./ sdM;
     % compute the distance
     D = bsxfun(@minus,D,M);
-    D = squeeze(sqrt(sum(D.^2,2)));
-    % normalize the distance such that the variance and mean are equal across channels
+    D = squeeze(sqrt(sum(D.^2,1)));
+    % normalize the distance such that the variance and mean are equal across samples
     if P.normdist
         D = (D - mean(D(:,~BE),2)) ./  std(D(:,~BE),[],2);
     end
@@ -232,7 +234,7 @@ colormap(jet)
 caxis(yl)
 set(gca,'XTickLabel',[])
 set(gca,'YTickLabel',[])
-xlabel('channel')
+xlabel('time')
 ylabel('trial')
 n=-round(size(Dorder,1)*0.02);
 xlim([n size(Dorder,1)])
@@ -243,7 +245,7 @@ for j=2:length(Nlim)
     H{j-1}=h(1);
 end
 legend([H{:}]',L{:},'Location','southoutside','Orientation','horizontal')
-title('Normalized distance to the average across epochs for each channel')
+title('Normalized distance to the average across epochs for each sample')
 colorbar
 
 % boxplots

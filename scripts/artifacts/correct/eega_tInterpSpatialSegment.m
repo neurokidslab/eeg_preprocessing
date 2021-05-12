@@ -16,9 +16,6 @@
 %                 'distance', default 'triangulation')
 % pneigh        : maximun proportion of bad neighbor channels
 % distneighbour : distance to define neighbours
-% nsmplmean     : number of samples over which the mean before and after a
-%                 bad calculated to realign the interpolated segment
-%                 (default=1)
 % minintertime  : minimun length of a segment in order to be interpolated
 %               in samples (default=1).
 % masktime      : time to mask bad segments before interpolation in samples
@@ -47,13 +44,12 @@ fprintf('### Spatial interpolatiom of bad segments ###\n')
 %% ------------------------------------------------------------------------
 %% Parameters
 
+P.minintertime      = 0;
+P.masktime          = 0;
 P.distneighbour     = [];
 P.distmethod        = 'triangulation'; % 'distance', 'triangulation' or 'template'
 P.pneigh            = 1;
-P.nsmplmean         = 1;
 P.maxloop           = 10;
-P.minintertime      = 0;
-P.masktime          = 0;
 P.splicemethod      = 1; % 0 / 1 / 2 / 3
 P.silent            = 0;
 

@@ -26,32 +26,25 @@ fprintf('### Target PCA ###\n')
 
 %% ------------------------------------------------------------------------
 %% Parameters
-savecorrected = 1;
-alltime = 'nobadtime';
-allchannels = 'nobadch';
-idxrmv = [];
-for i=1:2:length(varargin)
-    if strcmpi(varargin{i},'maxtime') || strcmpi(varargin{i},'masktime') || strcmpi(varargin{i},'wsize')
-        varargin{i+1} = round(varargin{i+1}*EEG.srate);
-    end
-    if strcmp(varargin{i},'savecorrected')
-        savecorrected = varargin{i+1};
-        idxrmv=[idxrmv i i+1];
-    end
-    if strcmp(varargin{i},'alltime')
-        alltime = varargin{i+1};
-        idxrmv=[idxrmv i i+1];
-    end
-    if strcmp(varargin{i},'allchannels')
-        allchannels = varargin{i+1};
-        idxrmv=[idxrmv i i+1];
-    end
+P.savecorrected = 1;
+P.alltime       = 'nobadtime';
+P.allchannels   = 'nobadch';
+P.idxrmv        = [];
+P.maxTime       = 0.100;
+P.maskTime      = 0.050;
+P.splicemethod  = 1; % 
+P.order         = 3; % order of polynomial to fit the trend if P.splicemethod = 4
+P.wsize         = 4; % time to mask the bad segment to detrend if P.splicemethod = 4
+P.silent        = 0;
+
+[P, OK, extrainput] = eega_getoptions(P, varargin);
+if ~OK
+    error('eega_tTargetPCAxElEEG: Non recognized inputs')
 end
-varargin(idxrmv) = [];
 
 %% ------------------------------------------------------------------------
 %% Interpolate
-switch alltime
+switch P.alltime
     case 'all'
         intertime=[];
     case 'nobadtime'
@@ -59,7 +52,7 @@ switch alltime
     case 'badtime'
         intertime=EEG.artifacts.BT;
 end
-switch allchannels
+switch P.allchannels
     case 'all'
         interch=[];
     case 'nobadch'
@@ -76,10 +69,15 @@ if ~isempty(EEG.data)
         interch,...
         nSV,...
         vSV,...
-        varargin{:});
+        'maxTime',round(P.maxTime*EEG.srate),...
+        'maskTime',round(P.maskTime*EEG.srate),...
+        'order',P.order,...
+        'splicemethod',P.splicemethod,...
+        'wsize',round(P.wsize*EEG.srate),...
+        'silent',P.silent);
 
     % mark the interpolated data                        
-    if savecorrected
+    if P.savecorrected
         if ~isfield(EEG.artifacts,'CCT')
             EEG.artifacts.CCT = false(size(EEG.data));
         end

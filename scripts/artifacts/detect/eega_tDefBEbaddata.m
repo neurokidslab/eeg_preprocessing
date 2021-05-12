@@ -96,19 +96,28 @@ idxtime = EEG.times>=P.where(1) & EEG.times<=P.where(2);
 nS = sum(idxtime);
 
 % find bad epochs
-ElBadAll = all(EEG.artifacts.BC,3);
-nElBadAll = sum(ElBadAll);
-nElAct = nEl - nElBadAll;
+% ElBadAll = all(EEG.artifacts.BC,3);
+% nElBadAll = sum(ElBadAll);
+% nElAct = nEl - nElBadAll;
+% TOT = nan(nEp,4);
+% TOT(:,1) = squeeze(sum(sum(EEG.artifacts.BCT(~ElBadAll,idxtime,:),1),2) / (nS*nElAct));
+% TOT(:,2) = squeeze(sum(EEG.artifacts.BT(:,idxtime,:),2) / nS);
+% TOT(:,3) = squeeze(sum(EEG.artifacts.BC(~ElBadAll,:,:),1) / nElAct);
+% TOT(:,4) = squeeze(sum(sum(EEG.artifacts.CCT(~ElBadAll,idxtime,:),1),2) / (nS*nElAct));
 TOT = nan(nEp,4);
-TOT(:,1) = squeeze(sum(sum(EEG.artifacts.BCT(~ElBadAll,idxtime,:),1),2) / (nS*nElAct));
+TOT(:,1) = squeeze(sum(sum(EEG.artifacts.BCT(:,idxtime,:),1),2) / (nS*nEl));
 TOT(:,2) = squeeze(sum(EEG.artifacts.BT(:,idxtime,:),2) / nS);
-TOT(:,3) = squeeze(sum(EEG.artifacts.BC(~ElBadAll,:,:),1) / nElAct);
-TOT(:,4) = squeeze(sum(sum(EEG.artifacts.CCT(~ElBadAll,idxtime,:),1),2) / (nS*nElAct));
+TOT(:,3) = squeeze(sum(EEG.artifacts.BC(:,:,:),1) / nEl);
+TOT(:,4) = squeeze(sum(sum(EEG.artifacts.CCT(:,idxtime,:),1),2) / (nS*nEl));
 if P.log
-    TOT(TOT(:,1)==0,1) = 1/ (nS*nElAct);
+%     TOT(TOT(:,1)==0,1) = 1/ (nS*nElAct);
+%     TOT(TOT(:,2)==0,2) = 1/ nS;
+%     TOT(TOT(:,3)==0,3) = 1/ nElAct;
+%     TOT(TOT(:,4)==0,4) = 1/ (nS*nElAct);
+    TOT(TOT(:,1)==0,1) = 1/ (nS*nEl);
     TOT(TOT(:,2)==0,2) = 1/ nS;
-    TOT(TOT(:,3)==0,3) = 1/ nElAct;
-    TOT(TOT(:,4)==0,4) = 1/ (nS*nElAct);
+    TOT(TOT(:,3)==0,3) = 1/ nEl;
+    TOT(TOT(:,4)==0,4) = 1/ (nS*nEl);
     TOT = log(TOT);
     for i=1:4
         limAbs{i} = log(limAbs{i});

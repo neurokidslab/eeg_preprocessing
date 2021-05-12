@@ -28,31 +28,29 @@ fprintf('### Spatial interpolatiom of bad segments ###\n')
 
 %% ------------------------------------------------------------------------
 %% Parameters
-savecorrected = 1;
-mingoodtime = 0;
-idxrmv = false(1,length(varargin));
-for i=1:2:length(varargin)
-    if strcmpi(varargin{i},'minintertime') || strcmp(varargin{i},'masktime')
-        varargin{i+1} = round(varargin{i+1}*EEG.srate);
-    end
-    if strcmpi(varargin{i},'savecorrected')
-        savecorrected = varargin{i+1};
-        idxrmv(i:i+1) = 1;
-    end
-    if strcmpi(varargin{i},'mingoodtime')
-        mingoodtime = varargin{i+1};
-        idxrmv(i:i+1) = 1;
-    end
+P.savecorrected     = 1;
+P.mingoodtime       = 2.00;
+P.minintertime      = 0.10;
+P.masktime          = 1.00;
+P.distneighbour     = [];
+P.distmethod        = 'triangulation'; % 'distance', 'triangulation' or 'template'
+P.pneigh            = 1;
+P.maxloop           = 10;
+P.splicemethod      = 1; % 0 / 1 / 2 / 3
+P.silent            = 0;
+
+[P, OK, extrainput] = eega_getoptions(P, varargin);
+if ~OK
+    error('eega_tInterpSpatialSegmentEEG: Non recognized inputs')
 end
-varargin(idxrmv) = [];
 
 %% ------------------------------------------------------------------------
 %% Interpolate
 if ~isempty(EEG.data)
     
     % mark as bad too short bad segments
-    if mingoodtime~=0
-        [ EEG, ~ ] = eega_tRejShortGood( EEG, 'timelim', mingoodtime );
+    if P.mingoodtime~=0
+        [ EEG, ~ ] = eega_tRejShortGood( EEG, 'timelim', P.mingoodtime );
     end
     
     % interpolate
@@ -62,10 +60,17 @@ if ~isempty(EEG.data)
                                 ~EEG.artifacts.BT,...
                                 EEG.chanlocs,...
                                 p_int,...
-                                varargin{:});
+                                'minintertime',round(P.minintertime*EEG.srate),...
+                                'masktime',round(P.masktime*EEG.srate),...
+                                'distneighbour',P.distneighbour,...
+                                'distmethod',P.distmethod,...
+                                'pneigh',P.pneigh,...
+                                'maxloop',P.maxloop,...
+                                'splicemethod',P.splicemethod,...
+                                'silent',P.silent);
     
     % mark the interpolated data                        
-    if savecorrected
+    if P.savecorrected
         if ~isfield(EEG.artifacts,'CCT')
             EEG.artifacts.CCT = false(size(EEG.data));
         end

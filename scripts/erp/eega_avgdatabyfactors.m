@@ -208,10 +208,17 @@ end
 %% ------------------------------------------------------------------------
 %% Define the as empty is it was a bad subject
 if goodsbj
+    newname = cell(size(theCND));
     for i=1:length(theCND)
-        theCND{i}= matlab.lang.makeValidName(theCND{i});
+        if length(theCND{i})>15
+        newname{i} = theCND{i}(end-15:end);
+        else
+            newname{i} = theCND{i};
+        end
     end
-    TrialsxCND = array2table(trialsxCND,'VariableNames',theCND');
+    newname = matlab.lang.makeValidName(newname);
+    newname = matlab.lang.makeUniqueStrings(newname);
+    TrialsxCND = array2table(trialsxCND,'VariableNames',newname');
 else    
     TrialsxCND = [];
 end

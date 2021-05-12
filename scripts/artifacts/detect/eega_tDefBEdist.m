@@ -32,11 +32,11 @@ fprintf('### Identifying Bad Epochs Based on the Distance to the Mean ###\n' )
 P.keeppre       = 1;
 P.relative      = 1;
 P.maxloops      = 5;
-P.plot          = 1;
+P.plot          = 0;
 P.savefigure    = 0;
 P.where         = [];
 P.rmvmean       = 0;
-P.normdist      = 0;
+P.normdist      = 1;
 P.hpfilter      = [];
 P.lpfilter      = [];
 P.distance      = 'euclidean';
@@ -107,7 +107,7 @@ while ~ok && ci<=P.maxloops
     
     M = nanmean(dataM(:,:,~BE),3);
 
-    % scale the mean based on the standard deviations
+    % scale the mean based on the standard deviations (otherwise the mean and the single trila data have differnt amplitudes)
     sdM = std(M,[],2);
     sdD = std(reshape(data,[size(data,1) size(data,2)*size(data,3)]),[],2);
     M = M .* sdD ./ sdM;
@@ -124,36 +124,40 @@ while ~ok && ci<=P.maxloops
         end
     end
     
+    % log transfomation to have a normal distribution
+    if strcmp(P.distance,'euclidean')
+        D = log(D);
+    end
+    
     % normalize the distance such that the variance and mean are equal across samples
     if P.normdist
         D = (D - mean(D(:,~BE),2)) ./  std(D(:,~BE),[],2);
     end
     
-    % log transfomation
-    if strcmp(P.distance,'euclidean')
-        D = log(D);
-    end
-    
     % threshold for the distance
     if P.relative
-        P75 = prctile(D(:,~BE),75,2);
-        P25 = prctile(D(:,~BE),25,2);
+        d = D(:,~BE);
+        P75 = prctile(d(:),75);
+        P25 = prctile(d(:),25);
         threshD = P75 + limDist .* (P75-P25);
     else
         threshD = limDist;
     end
     RR = D > repmat(threshD,[1 size(D,2)]);
     
-    % thrshold for the amount of data to far away
+    % thrshold for the amount of data too far away
     if limBadDist<=1
-        R = (sum(RR,1)/nS)>=limBadDist;
+        Rt = (sum(RR,1)/nS)>=limBadDist;
     else
         P75 = prctile(sum(RR,1)/nS,75);
         P25 = prctile(sum(RR,1)/nS,25);
         threshR = P75 + limBadDist .* (P75-P25);
-        R = (sum(RR,1)/nS)>=threshR;
+        Rt = (sum(RR,1)/nS)>=threshR;
     end
-    R = R';
+    Rt = Rt';
+    
+    % Rejection vector
+    R = Rt;
     
     % check if new data was rejected
     if all( ( R | BE ) == BE) 

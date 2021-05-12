@@ -66,6 +66,7 @@ end
 %% Do it for all the files
 EEGALL  = [];
 S = 0;
+SummaryHistory = [];
 if ~isempty(subjects)
     for s = 1:length(subjects)
         
@@ -196,6 +197,20 @@ if ~isempty(subjects)
                     end
                 end
                 
+                
+                % ----------------------------------------------------------------------
+                % Add the summary history
+                if isfield(EEG,'summaryhistory') && ~isempty(EEG.summaryhistory)
+                    if S==1
+                        SummaryHistory = EEG.summaryhistory ;
+                    else
+                        fff = fieldnames(SummaryHistory);
+                        for isum=1:length(fff)
+                            SummaryHistory.(fff{isum}) = cat(1,SummaryHistory.(fff{isum}),EEG.summaryhistory.(fff{isum}));
+                        end
+                    end
+                end
+                
                 % ----------------------------------------------------------------------
                 % Add the number of trials
                 if isfield(EEG,'TrialsxCND') && ~isempty(EEG.TrialsxCND)
@@ -319,6 +334,9 @@ if ~isempty(subjects)
     end
     if isfield(EEG,'chaninfo')
         EEGALL.chaninfo = EEG.chaninfo;
+    end
+    if ~isempty(SummaryHistory)
+        EEGALL.summaryhistory = SummaryHistory;
     end
     
 else

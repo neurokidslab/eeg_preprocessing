@@ -153,7 +153,7 @@ if ~isempty(P.minBadTime)
 end
 
 % Mask around
-if ~isempty(P.maskTime)
+if ~isempty(P.maskTime) && P.maskTime~=0
     P.maskTime = P.maskTime * EEG.srate;
     art_buffer=round(P.maskTime);
     for ep=1:nEp
