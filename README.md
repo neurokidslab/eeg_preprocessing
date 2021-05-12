@@ -2,7 +2,7 @@
 
 > Authors: Ana Flo (anaflom@gmail.com)
 
-This is the code repository for pre-preprocessing developmental EEG data of the UNICOG BabyLab, NeuroSpin.
+This is the code repository for APICE, the prepreprocessing pipeline for developmental EEG data of the UNICOG BabyLab, NeuroSpin.
 All routines are implemented in MATLAB.
 
 #### Requirements
