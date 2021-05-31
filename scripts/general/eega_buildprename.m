@@ -111,6 +111,8 @@ for i=1:2:length(Fnct)
             end
         case 'eega_refavg'
             new = 'r_';
+        case 'pop_reref'
+            new = 'r_';
         case 'eega_normtrltrlvar'
             new = 'nvt_';
         case 'eega_normalization'
@@ -119,7 +121,7 @@ for i=1:2:length(Fnct)
             if any(strcmp(Fnct{i+1},'latency')) && isnumeric(Fnct{i+1}{find(strcmp(Fnct{i+1},'latency'))+1})
                 tw = Fnct{i+1}{find(strcmp(Fnct{i+1},'latency'))+1};
                 if ismatrix(tw)
-                    ntime = sprintf('%dto%d_', tw(1), tw(2));
+                    ntime = sprintf('%dto%d', tw(1), tw(2));
                 end
             end
             if any(strcmp(Fnct{i+1},'epochs')) && strcmp(Fnct{i+1}{find(strcmp(Fnct{i+1},'epochs'))+1},'single')
@@ -159,6 +161,8 @@ for i=1:2:length(Fnct)
             else
                 new = sprintf('%d-%3.2f-dss_',Fnct{i+1}{2},Fnct{i+1}{1});
             end
+        case 'eega_spatialsmoothing'
+            new = 'ss_';
         case 'eega_runmara'
             new = 'mara_';
         case 'eega_rmcompica'

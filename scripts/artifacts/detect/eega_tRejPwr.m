@@ -260,7 +260,7 @@ end
 if P.updatesummary
     EEG.artifacts.summary = eega_summaryartifacts(EEG);
 end
-if P.updatealgorithm
+if P.updatealgorithm && isfield(EEG.artifacts, 'algorithm')
     EEG.artifacts.algorithm.parameters = cat(1,EEG.artifacts.algorithm.parameters(:),{P});
     f = dbstack;
     EEG.artifacts.algorithm.stepname = cat(1,EEG.artifacts.algorithm.stepname(:),{f(1).name});
