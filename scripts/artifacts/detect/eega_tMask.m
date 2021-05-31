@@ -34,37 +34,15 @@ end
 %% Get data and check that the artifact structure exists 
 [nEl, nS, nEp] = size(EEG.data);
 EEG = eeg_checkart(EEG);
-BCTin = EEG.artifacts.BCT;
-BCT = false(nEl,nS,nEp);
 
 %% ------------------------------------------------------------------------
 %% Algorithm
-
-art_buffer = round(P.tmask*EEG.srate); % time in seconds times sample rate
-
-for ep=1:nEp
-    for el = 1:nEl
-        bad_i = diff([0; BCTin(el,:,ep)'])==1;  % begining of bad segments
-        bad_f = diff([BCTin(el,:,ep)'; 0])==-1; % end of bad segments
-        bad_i = find(bad_i);
-        bad_f = find(bad_f);
-        for j=1:length(bad_i)
-            bad_idx_i = ((bad_i(j)-art_buffer):(bad_i(j)-1));
-            bad_idx_i(bad_idx_i<=0) = [];
-            bad_idx_f = ((bad_f(j)+1):(bad_f(j)+art_buffer));
-            bad_idx_f(bad_idx_f>nS) = [];
-            BCT(el,bad_idx_i,ep) = 1;
-            BCT(el,bad_idx_f,ep) = 1;
-        end
-    end
-    
-end
-
+BCT = eega_maskmatrix(EEG.artifacts.BCT, P.tmask, EEG.srate);
 
 %% ------------------------------------------------------------------------
 %% Display rejected data
 n = nEl*nS*nEp;
-new = BCT & ~BCTin;
+new = BCT & ~EEG.artifacts.BCT;
 new = sum(new(:));
 fprintf('Total data rejected %3.2f %%\n', new/n*100 )
 
@@ -80,7 +58,7 @@ if P.updatealgorithm
     EEG.artifacts.algorithm.parameters = cat(1,EEG.artifacts.algorithm.parameters(:),{P});
     f = dbstack;
     EEG.artifacts.algorithm.stepname = cat(1,EEG.artifacts.algorithm.stepname(:),{f(1).name});
-    EEG.artifacts.algorithm.rejxstep = cat(1,EEG.artifacts.algorithm.rejxstep(:),sum(BCT(:)));
+    EEG.artifacts.algorithm.rejxstep = cat(1,EEG.artifacts.algorithm.rejxstep(:),new);
 end
 
 fprintf('\n' )

@@ -137,6 +137,13 @@ BCT = Ru;
 clear Ru
 
 %% ------------------------------------------------------------------------
+%% Mask around 
+if ~isempty(P.mask) && P.mask~=0
+    fprintf('- Mask around %4.3f s\n', P.mask)
+    BCT = eega_maskmatrix(BCT, P.mask, EEG.srate);
+end
+
+%% ------------------------------------------------------------------------
 %% Update the rejection matrix
 if P.updateBCT
     EEG.artifacts.BCT = EEG.artifacts.BCT | BCT;
@@ -158,14 +165,6 @@ if P.dozscore
 end
 if P.refdata
     EEG.data = EEG.data + repmat(reference,[size(EEG.data,1) 1 1]);
-end
-
-%% ------------------------------------------------------------------------
-%% Mask around 
-if ~isempty(P.mask) && P.mask~=0
-    [ EEG, bctmask ] = eega_tMask( EEG, 'tmask', P.mask);
-    BCT = BCT | bctmask;
-    clear bctmask
 end
 
 %% ------------------------------------------------------------------------
