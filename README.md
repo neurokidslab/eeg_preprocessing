@@ -14,4 +14,4 @@ All routines are implemented in MATLAB.
 * <a href="https://www.fieldtriptoolbox.org/" target_="blank">FieldTrip toolbox</a>, only necessary to perform a cluster based permutation analysis
 
 #### Data
-An example dataset processed using the APICE pipeline as described in the example can be found <a href="https://drive.google.com/folderview?id=1fLBg7oOMN2HKfsmPLVct6n9kysCwkl42" target_="blank">here</a>  
+An example dataset processed using the APICE pipeline as described in the example can be found <a href="https://drive.google.com/drive/folders/1fLBg7oOMN2HKfsmPLVct6n9kysCwkl42?usp=sharing" target_="blank">here</a>  
