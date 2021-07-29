@@ -97,10 +97,9 @@ ICA.flthpass    = 2;    % high pass filter before ICA
 %% Run the prerpocessing
 %% ------------------------------------------------------------------------
 
-% The data provided as example starts from  a dataset in the EEGLAB format
-% saved as .set. 
+% In order to properly used the pipeline files in the EEGLAB fromat (.set) are requeired
 % Importing the data and eventually extra information for the events can be
-% done using the functions provided here or any other method
+% done using the functions provided here or any other method. 
 
 % -------------------------------------------------------------------------
 % Import data, filter
@@ -223,6 +222,7 @@ BL.tw          = [-100 100];
 % Arreange events
 % -------------------------------------------------------------------------
 % correct the latency of the events by the DINs
+% The latency of the third input (e.g., 'Icue') is corrected by the second input (e.g., 'DIN6')
 EEG = eega_latencyevent(EEG, 'DIN6', {'Icue'});
 EEG = eega_latencyevent(EEG, 'DIN6', {'Iout'});
 EEG = eega_latencyevent(EEG, 'DIN6', {'Ieye'});
@@ -238,10 +238,16 @@ EEG = pop_eegfiltnew(EEG, filt_highpass, [], [], 0, [], [], 0);
 % -------------------------------------------------------------------------
 % Epoch, define conditions, and BT and BC on the epoched data
 % -------------------------------------------------------------------------
+
 % Epoch
+% time for the epoching (Epoch.tw) and referece events to use as time zero (Epoch.ev) should be modified
 EEG = eega_epoch(EEG, Epoch.ev, Epoch.tw);
+
 % define based on the events the factors that will be used to determine conditions
+% the second input indicates events properties (e.g., in EEG.epoch(i).eventCong) to use for defining factors of analysis 
+% this factors can be the used for averaging
 EEG = eega_definefactors(EEG, {'eventCong' 'eventProb'});
+
 % define Bad Times and Bad Channels
 EEG = eega_tDefBTBC(EEG, BTep.nbc,BCep.nbt,BCall.nbt,'keeppre',0,'minBadTime',BTep.minBadTime,'minGoodTime',BTep.minGoodTime,'maskTime',BTep.maskTime);
 

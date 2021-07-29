@@ -90,10 +90,10 @@ ICA.flthpass    = 2;    % high pass filter before ICA
 %% Run the prerpocessing
 %% ------------------------------------------------------------------------
 
-% The data provided as example starts from step 1, a dataset in the EEGLAB 
-% format saved as .set
+
+% In order to properly used the pipeline files in the EEGLAB fromat (.set) are requeired
 % Importing the data and eventually extra information for the events can be
-% done using the functions provided here or any other method
+% done using the functions provided here or any other method. 
 
 % -------------------------------------------------------------------------
 % 0)Import data 
@@ -247,6 +247,10 @@ BL.tw          = [-100 100];
 %% ------------------------------------------------------------------------
 %% Run the ERP
 %% ------------------------------------------------------------------------
+
+% Parameters regarding the events to epoch, to correct latencies and the 
+% factors to average across condition should be modified.
+% Check the pipeline for one subject
 
 % -------------------------------------------------------------------------
 % 4b) Epoch, define experimental factors, filter, interpolate bad channels, 
