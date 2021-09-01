@@ -35,7 +35,7 @@ fprintf('### Identifying Bad Epochs ###\n' )
 %% Parameters
 P.keeppre       = 1;
 P.log           = 0;
-P.maxloops      = 3;
+P.maxloops      = 1;
 P.plot          = 0;
 P.savefigure    = 0;
 P.where         = [];

@@ -54,32 +54,7 @@ if ~isempty(subjects)
         end
         
         % -----------------------------------------------------------------
-        % Find the info for the different stages during pre-processing
-        
-        % Last stage before epoching
-        idx = find(EEG.summaryhistory.nep==1);
-        if ~isempty(idx)
-            summaryIDX(1) = idx(end);
-            what{1} = 'continuos data';
-        end
-        
-        % Before rejecting bad epochs
-        idx = find(diff(EEG.summaryhistory.nep)<0);
-        if ~isempty(idx)
-            summaryIDX(2) = idx(end);
-            what{2} = 'epoch data';
-        end
-        
-        % Finale stage
-%         idx = find(diff(EEG.summaryhistory.nep)<0);
-        idx  = length(EEG.summaryhistory.nep);
-        if ~isempty(idx)
-            summaryIDX(3) = idx(1);
-            what{3} = 'epoch data without bad epochs';
-        end
-        
-        % -----------------------------------------------------------------
-        % Take the important info
+        % Take the name of the subject
         
         if isempty(patternname)
             SBJ{s} = EEG.filename;
@@ -92,25 +67,57 @@ if ~isempty(subjects)
             end
         end
         
-        if length(summaryIDX)==1 && summaryIDX==0 && isfield(EEG,'summary')
-            Nch(s) = EEG.summary.nch;
-            Nspl(s) = EEG.summary.nsmpl;
-            Nep(s) = EEG.summary.nep;
-            BCT(s) = 100* EEG.summary.BCTn / (Nspl(s)*Nch(s)*Nep(s));
-            CCT(s) = 100* EEG.summary.CCTn / (Nspl(s)*Nch(s)*Nep(s));
-            BT(s) = 100* EEG.summary.BTn / (Nspl(s)*Nep(s));
-            BC(s) = 100* EEG.summary.BCn / (Nch(s)*Nep(s));
-        elseif length(summaryIDX)>1 && isfield(EEG,'summaryhistory')
+        % -----------------------------------------------------------------
+        % Find the info for the different stages during pre-processing
+        
+        if isfield(EEG,'summaryhistory')
+            
+            sumhist = 1;
+            
+            % Last stage before epoching
+            idx = find(EEG.summaryhistory.nep==1);
+            if ~isempty(idx)
+                summaryIDX(1) = idx(end);
+                what{1} = 'continuos data';
+            end
+            
+            % If the data is epoched
+            if any(EEG.summaryhistory.nep>1)
+                
+                % Before rejecting bad epochs
+                idx = find(diff(EEG.summaryhistory.nep)<0);
+                if ~isempty(idx)
+                    summaryIDX(2) = idx(end);
+                    what{2} = 'epoched data';
+                end
+                
+                % Finale stage
+                %         idx = find(diff(EEG.summaryhistory.nep)<0);
+                idx  = length(EEG.summaryhistory.nep);
+                if ~isempty(idx)
+                    summaryIDX(3) = idx(1);
+                    what{3} = 'epoched data without bad epochs';
+                end
+            end
+            
+        else
+            sumhist = 0;
+        end
+       
+        % -----------------------------------------------------------------
+        % Take the important info
+        
+        if ~sumhist && isfield(EEG,'summary')
+            Nch(s,1) = EEG.summary.nch;
+            Nspl(s,1) = EEG.summary.nsmpl;
+            Nep(s,1) = EEG.summary.nep;
+            BCT(s,1) = 100* EEG.summary.BCTn / (Nspl(s)*Nch(s)*Nep(s));
+            CCT(s,1) = 100* EEG.summary.CCTn / (Nspl(s)*Nch(s)*Nep(s));
+            BT(s,1) = 100* EEG.summary.BTn / (Nspl(s)*Nep(s));
+            BC(s,1) = 100* EEG.summary.BCn / (Nch(s)*Nep(s));
+        elseif sumhist
             for j=1:length(summaryIDX)
-                if summaryIDX(j)==0
-                    Nch(s,j) = EEG.summary.nch;
-                    Nspl(s,j) = EEG.summary.nsmpl;
-                    Nep(s,j) = EEG.summary.nep;
-                    BCT(s,j) = 100* EEG.summary.BCTn / (Nspl(s,j)*Nch(s,j)*Nep(s,j));
-                    CCT(s,j) = 100* EEG.summary.CCTn / (Nspl(s,j)*Nch(s,j)*Nep(s,j));
-                    BT(s,j) = 100* EEG.summary.BTn / (Nspl(s,j)*Nep(s,j));
-                    BC(s,j) = 100* EEG.summary.BCn/ (Nch(s,j))*Nep(s,j);
-                else
+                if ~isnan(summaryIDX(j))
                     Nch(s,j) = EEG.summaryhistory.nch(summaryIDX(j));
                     Nspl(s,j) = EEG.summaryhistory.nsmpl(summaryIDX(j));
                     Nep(s,j) = EEG.summaryhistory.nep(summaryIDX(j));
@@ -118,10 +125,27 @@ if ~isempty(subjects)
                     CCT(s,j) = 100* EEG.summaryhistory.CCTn(summaryIDX(j)) / (Nspl(s,j)*Nch(s)*Nep(s,j));
                     BT(s,j) = 100* EEG.summaryhistory.BTn(summaryIDX(j)) / (Nspl(s,j)*Nep(s,j));
                     BC(s,j) = 100* EEG.summaryhistory.BCn(summaryIDX(j)) / (Nch(s,j)*Nep(s,j));
+                    
                 end
             end
         end
     end
+    
+    % ---------------------------------------------------------------------
+    % Remove empty tables
+    idxrmv = all(isnan(Nch),1);
+    summaryIDX(idxrmv) = [];
+    what(idxrmv) = [];
+    Nch(:,idxrmv) = [];
+    Nspl(:,idxrmv) = [];
+    Nep(:,idxrmv) = [];
+    BCT(:,idxrmv) = [];
+    CCT(:,idxrmv) = [];
+    BT(:,idxrmv) = [];
+    BC(:,idxrmv) = [];
+    
+    % ---------------------------------------------------------------------
+    % Print the table
     VarNames = {'Ch' 'Smpl' 'Ep' 'BCT(%)' 'CCT(%)' 'BT(%)' 'BC(%)'};
     T = cell(1,length(summaryIDX));
     for j=1:length(summaryIDX)

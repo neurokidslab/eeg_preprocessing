@@ -1,19 +1,19 @@
 % -------------------------------------------------------------------------
 % This functions changes the labels of the channels corresponding to the
 % 128-electrodes Geodesic Sensor Net to the aproximately corresponding 
-% electrodes in the standar system  
+% electrodes in the standard system  
 %
 % INPUT
 % chanlocs      structure with the channels location
 %
 % OPTIONAL INPUTS
-% stdlatbelsch  cell of size n x 2 with the labels in chanlocs and the new
+% labelch       cell of size n x 2 with the labels in chanlocs and the new
 %               names. 
 %               It can also be the name of a text file with the old and new
 %               names.
 %               If empty, the default is used
 % order         vector of length 2, such that order(1) is the column 
-%               corresponding to the old name anda order(2) to the new.
+%               corresponding to the old name and order(2) to the new.
 %               Default value [1 2]
 % 
 % OUTPUS
@@ -23,11 +23,11 @@
 %
 % -------------------------------------------------------------------------
 
-function [chanlocsnew, labchange] = eega_changechlable(chanlocs,stdlatbelsch, order)
+function [chanlocsnew, labchange] = eega_changechlable(chanlocs,labelch, order)
 if nargin<3; order = [1 2]; end
-if nargin<2; stdlatbelsch = []; end
+if nargin<2; labelch = []; end
 
-if isempty(stdlatbelsch)
+if isempty(labelch)
 % % 104 electrode system equivalent    
 %     newLab = {...
 %         'E1'	'F10';
@@ -291,13 +291,13 @@ if isempty(stdlatbelsch)
         'E127'	'E127';
         'E128'	'E128';
         'E129'	'Cz'}; %
-elseif ischar(stdlatbelsch)
-    FID = fopen(stdlatbelsch);
+elseif ischar(labelch)
+    FID = fopen(labelch);
     data = textscan(FID,'%s\t%s');
     fclose(FID);
     newLab = [data{order(1)} data{order(2)}];
-elseif iscell(stdlatbelsch)
-    newLab = stdlatbelsch(:,order);
+elseif iscell(labelch)
+    newLab = labelch(:,order);
 end
 
 chanlocsnew = chanlocs;

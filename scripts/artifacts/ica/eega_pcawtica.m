@@ -18,18 +18,20 @@ function EEG = eega_pcawtica(EEG, varargin)
 
 % Default parameters
 P.subspacech    = [];
-P.filthighpass  = 2;
-P.filtlowpass   = 40;
-P.npc           = 0;
+P.filthighpass  = 2;        % High pass filter applied before ICA. Default 2
+P.filtlowpass   = 40;       % Low pass filter applied before ICA. Default 40
+P.npc           = 0;        % Number of components to keep in the PCA. If 0 it is not applied. Default 0
 P.level         = 6;
 P.mult          = 1;
-P.threshtype    = 'xlevel';  % 'xlevel' | 'global'
-P.applymara     = 1;
-P.funrejica     = 'iMARA';
-P.stdlatbelsch  = [];
-P.rmvart        = 1;  % 0= do not remove; 1= remove IC; 2= remove IC and wavelet thresholding
-P.saveica       = 1;
-P.icaname       = 'ica_';
+P.threshtype    = 'xlevel'; % 'xlevel' | 'global'
+P.classifyIC    = 1;        % Apply an authomatic classification of IC components. Default (1)
+P.classifyICfun = 'iMARA';  % Function use to classify IC. Default 'iMARA'
+P.changelabelch = 0;        % Change the labels of the channels to be conistent with the classification algorithm. Default False
+P.labelch       = [];       % Cell of size n x 2 with the labels in chanlocs and the new names. It can also be the name of a text file with the old and new names. If empty, the default is the convertion from a EGI 129 layout
+P.rmvart        = 1;        % 0= do not remove; 1= remove IC; 2= remove IC and wavelet thresholding
+P.saveica       = 1;        % Save a file with the ICA weights. Default True
+P.icaname       = 'ica_';   % Name added to save the ICA decomposition. Default 'ica_'
+P.icapath       = [];       % Path were to to save the ICA decomposition. By default in EEG.filepath
 P.artthreshold = 0.9;
 
 % get the optional parameters
@@ -38,10 +40,17 @@ if ~OK
     error('eega_pcawtica: Non recognized inputs')
 end
 
-% If MARA has to be applied check that it is install
-if P.applymara
-    if exist(P.funrejica,'file')~=2
-        error('The %s toolbox is not in the path. Install the plugin (https://github.com/irenne/MARA)',P.funmara)
+% If an authomatic ICA rejection has to be applied check that it is install
+if P.classifyIC
+    if exist(P.classifyICfun,'file')~=2
+		switch P.classifyICfun
+			case 'iMARA'
+				error('The %s toolbox is not in the path. Install the plugin (https://github.com/Ira-marriott/iMARA/)',P.funmara)
+			case 'MARA'
+				error('The %s toolbox is not in the path. Install the plugin (https://github.com/irenne/MARA/)',P.funmara)
+			otherwise
+				error('The %s toolbox is not in the path.',P.funmara)
+		end
     end
 end
 
@@ -56,26 +65,30 @@ bt = EEG.artifacts.BT;
 bct = EEG.artifacts.BCT;
 goodch = find(~bc);
 
+%% Check that there is any good data
 gooddata = 1;
 if all(bc) || all(bt)
     gooddata = 0;
 end
 
+%% If there is good data run ICA
 if gooddata
     
-    %% Low pass filter
+    %% 1. Low pass filter
     if ~isempty(P.filtlowpass)
         minphase = 0;
         eeg = pop_eegfiltnew(eeg, [], P.filtlowpass,  [], 0, [], [], minphase);
     end
     
-    %% High pass filter
+    %% 2. High pass filter
     if ~isempty(P.filthighpass)
         minphase = 0;
         eeg = pop_eegfiltnew(eeg, P.filthighpass, [],  [], 0, [], [], minphase);
     end
     
-    %% Load the channels sub-space
+    %% 3. Steps relevant only if ICA has to be applied on a sub-group of channels
+	
+	%  3.1 Load the channels sub-space 
     if ~isempty(P.subspacech)
         FID = fopen(P.subspacech);
         CH = {};
@@ -91,7 +104,7 @@ if gooddata
         CH = {EEG.chanlocs(:).labels}';
     end
     
-    %% Common channels in the sub-spaces
+    %  3.2 Search for the common channels in the sub-spaces
     if size(CH,2)>1
         fixChLab = CH(:,1);
         for i=1:size(CH,2)
@@ -109,30 +122,32 @@ if gooddata
         fixCh = false(length(eeg.chanlocs),1);
     end
     
-    %% Interpolate missing chanells from the common channels
+    %  3.3 Interpolate missing channels from the common channels
     if any(fixCh & bc)
         d = eega_tInterpSpatial( eeg.data, ~bc, eeg.chanlocs, 1);
         eeg.data(fixCh & bc,:,:) = d(fixCh & bc,:,:);
         bc(fixCh & bc,:,:) = 0;
     end
     
-    %% Remove bad samples
+	%% 4. Remove bad data before appliyng ICA to obtain a better decomposition
+	
+    %  4.1 Remove bad samples
     eeg.data = eeg.data(:,~bt,:);
     eeg.pnts = size(eeg.data,2);
     eeg.times = eeg.times(~bt);
     eeg.xmin = eeg.times(1);
     eeg.xmax = eeg.times(end);
     
-    %% Remove bad channels
+    %  4.2 Remove bad channels
     if sum(~bc)<EEG.nbchan
         eeg = pop_select( eeg,'channel', find(~bc));
         eeg = eeg_checkset( eeg );
     end
     
-    %% Set as zero the bad data
+    %  4.3 Set as zero the remaining bad data
     eeg.data(bct(~bc,~bt)) = 0;
     
-    %% See if the number of channels to analyse per time is not too high
+    %% 5. Check if the number of channels to analyse per time is not too high relative to the leght of the recording
     nS = size(eeg.data,2)*size(eeg.data,3);
     nICAlim = floor(sqrt(nS / 30));
     war=0;
@@ -143,7 +158,7 @@ if gooddata
         warning('The number of components should be smaller than %d',nICAlim);
     end
     
-    %% Re-arrange the channels
+    %% 6. Re-arrange the channels labels relative to the channel sub-space
     L = {eeg.chanlocs(:).labels};
     chxround = false(length(L),size(CH,2));
     for i=1:size(CH,2)
@@ -151,7 +166,7 @@ if gooddata
         chxround(indL,i) = 1;
     end
     
-    %% Compute ICA for each channels sub-space and remove the artifacts
+    %% 7. Compute ICA for each channels sub-space and remove the artifacts
     nrounds = size(CH,2);
     ICA = struct();
     varrmv = nan(1,nrounds);
@@ -160,18 +175,22 @@ if gooddata
     N = zeros(size(EEG.data));
     for i=1:nrounds
         
-        %% Channels sub-space in terms of the original EEG structure
+		% 7.1 Prepare the data 
+		
+        %channels sub-space in terms of the original EEG structure
         chi = goodch(chxround(:,i));
         
-        %% Samples subspace
+        %samples subspace
         smplsi = find(~bt);
         
-        %% Take the data
+        %take and reshape the data (channels x samples)
         tmpdata = eeg.data(chxround(:,i),:,:);
         tmpdata = reshape( tmpdata, sum(chxround(:,i)), eeg.pnts*eeg.trials);
-        tmpdata = tmpdata - repmat(mean(tmpdata,2), [1 size(tmpdata,2)]); %zero mean
+		
+		%zero mean
+        tmpdata = tmpdata - repmat(mean(tmpdata,2), [1 size(tmpdata,2)]); 
         
-        %% First PCA+ICA
+        %  7.2 First PCA+ICA
         if P.npc~=0
             [eigenvec, eigenval, score] = dopca(tmpdata');
             explained = eigenval/sum(eigenval)*100;
@@ -189,7 +208,7 @@ if gooddata
             IC = W * tmpdata;
         end
         
-        %% Wavelet-thresholding on the IC to remove big artifacts
+        %  7.3 Wavelet-thresholding on the IC to remove big artifacts
         fprintf('Performing wavelet-thresholding... \n')
         
         %wavelet decomposition and thresholding
@@ -204,13 +223,13 @@ if gooddata
         
         clear eigenvec eigenval score explained icaweights icasphere W A IC
         
-        %% Take the data again and substract the artifact signal
+        %  7.4 Take the data again and substract the artifact signal
         tmpdata = eeg.data(chxround(:,i),:,:);
         tmpdata = reshape( tmpdata, sum(chxround(:,i)), eeg.pnts*eeg.trials);
         tmpdata = tmpdata - repmat(mean(tmpdata,2), [1 size(tmpdata,2)]); %zero mean
         tmpdata = tmpdata - artifacts;
         
-        %% Second PCA+ICA on the clean data
+        %  7.5 Second PCA+ICA on the clean data
         if P.npc~=0
             [eigenvec, eigenval, score] = dopca(tmpdata');
             explained = eigenval/sum(eigenval)*100;
@@ -228,9 +247,9 @@ if gooddata
             S = icasphere;
         end
         
-        %% MARA to identify components corrisponding to artifacts
-        if P.applymara
-            fprintf('Applying %s to identify artifacts IC... \n',P.funrejica)
+        %  7.6 authomatically identify components corrisponding to artifacts
+        if P.classifyIC
+            fprintf('Applying %s to identify artifacts IC... \n',P.classifyICfun)
             
             %create the eeglab structure
             eegi.setname        = eeg.setname;
@@ -253,11 +272,12 @@ if gooddata
             eegi.etc            = eeg.etc;
             
             %change the labels of the channels to agree with the MARA labels.
-            % this may need to be modied depeding of the layout etc.!!!
-            eegi.chanlocs = eega_changechlable(eegi.chanlocs,P.stdlatbelsch);
+            if P.changelabelch
+                eegi.chanlocs = eega_changechlable(eegi.chanlocs,P.labelch);
+            end
             
             %run MARA/iMARA
-            switch P.funrejica
+            switch P.classifyICfun
                 case 'MARA'
                     [artcomps, info] = MARA(eegi);
                 case 'iMARA'
@@ -285,7 +305,7 @@ if gooddata
             varrmv(i) = 0;
         end
         
-        %% Estimate the artifacts
+        %  7.7 Estimate the artifacts
         if P.rmvart~=0
             %remove the components identied as artifacts
             if P.npc~=0 && length(cmp2rmv)==P.npc~=0
@@ -309,7 +329,7 @@ if gooddata
             
         end
         
-        %% store the ICa decomposition matrixes
+        %  7.8 store the ICa decomposition matrixes
         ICA(i).filthighpass = P.filthighpass;
         ICA(i).filtlowpass = P.filtlowpass;
         ICA(i).ch = chi;
@@ -327,7 +347,7 @@ if gooddata
         
     end
     
-    %% Remove the artifacts
+    %% 8. Remove the artifacts
     if P.rmvart~=0
         
         %divide the artifacts for the number of estimations
@@ -348,10 +368,14 @@ if gooddata
         
     end
     
-    %% Save the ICA decomposition
+    %% 9. Save the ICA decomposition
     if P.saveica
         [~,name,~] = fileparts(EEG.filename);
-        filename = fullfile(EEG.filepath, [P.icaname name '.mat']);
+        if isempty(P.icapath)
+            filename = fullfile(EEG.filepath, [P.icaname name '.mat']);
+        else
+            filename = fullfile(P.icapath, [P.icaname name '.mat']);
+        end
         save(filename, 'ICA')
     end
 else
