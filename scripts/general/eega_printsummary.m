@@ -146,7 +146,7 @@ if ~isempty(subjects)
     
     % ---------------------------------------------------------------------
     % Print the table
-    VarNames = {'Ch' 'Smpl' 'Ep' 'BCT(%)' 'CCT(%)' 'BT(%)' 'BC(%)'};
+    VarNames = {'Ch' 'Smpl' 'Ep' 'BCTx100' 'CCTx100' 'BTx100' 'BCx100'};
     T = cell(1,length(summaryIDX));
     for j=1:length(summaryIDX)
         T{j} = table(Nch(:,j),Nspl(:,j),Nep(:,j),BCT(:,j),CCT(:,j),BT(:,j),BC(:,j), 'VariableNames',VarNames,'RowNames',SBJ);

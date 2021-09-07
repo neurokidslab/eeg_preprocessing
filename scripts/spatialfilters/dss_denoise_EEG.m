@@ -77,7 +77,9 @@ if ~isempty(EEG.data)
     EEG.dssinfo.pca1 = keepnPCA1;
     EEG.dssinfo.pca2 = nComps;
     EEG.dssinfo.varrmvtot = varrmvtot;
-        
+else
+    Y = [];
+    W = [];
 end
 fprintf('\n')
 end
