@@ -19,13 +19,13 @@ clc
 % Specify the paths to the different relevant folders
 
 % Folder where EEGLAB is:
-Path2EEGLAB = fullfile('xxx','eeglab2020_0');
+Path2EEGLAB = fullfile('C:\Users\an251296\Documents\MATLAB\toolbox','eeglab2020_0');
 % Folder where the function for APICE are:
-Path2APICE = fullfile('xxx','eeg_preprocessing');
+Path2APICE = fullfile('C:\Users\an251296\nextCloud\MATLAB\mytoolbox','eeg_preprocessing');
 % Folder where iMARA is:
-Path2iMARA = fullfile('xxx','iMARA-main');
+Path2iMARA = fullfile('C:\Users\an251296\Documents\MATLAB\toolbox','iMARA-main');
 % Current path:
-Path0 = 'xxx\eeg_preprocessing\examples';
+Path0 = 'C:\Users\an251296\nextCloud\MATLAB\mytoolbox\eeg_preprocessing\examples';
 % Folder where the scripts defining the parameters are:
 Path2Parameters = fullfile(Path0,'parameters');
 % Channels location file
@@ -427,6 +427,9 @@ for sbj=1:length(files2pp)
     if Pplot.rejection
         eega_plot_artifacts(EEG)
         set(gcf, 'Name', 'artifacts rejection 1')
+        
+        eega_plot_rejection(EEG, 1, 1, 1, 120)
+        set(gcf, 'Name', 'artifacts rejection 1')
     end
     
     % ---------------------------------------------------------------------
@@ -465,6 +468,10 @@ for sbj=1:length(files2pp)
     if Pplot.rejection
         eega_plot_artifacts(EEG)
         set(gcf, 'Name', 'artifacts correction')
+        
+        
+        eega_plot_rejection(EEG, 1, 1, 1, 120)
+        set(gcf, 'Name', 'artifacts correction')
     end
     
     % ---------------------------------------------------------------------
@@ -475,6 +482,9 @@ for sbj=1:length(files2pp)
     % Plot the rejection matrix
     if Pplot.rejection
         eega_plot_artifacts(EEG)
+        set(gcf, 'Name', 'artifacts rejection 2')
+        
+        eega_plot_rejection(EEG, 1, 1, 1, 120)
         set(gcf, 'Name', 'artifacts rejection 2')
     end
     
