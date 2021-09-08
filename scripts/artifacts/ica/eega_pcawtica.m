@@ -29,6 +29,7 @@ P.classifyICfun = 'iMARA';  % Function use to classify IC. Default 'iMARA'
 P.changelabelch = 0;        % Change the labels of the channels to be conistent with the classification algorithm. Default False
 P.labelch       = [];       % Cell of size n x 2 with the labels in chanlocs and the new names. It can also be the name of a text file with the old and new names. If empty, the default is the convertion from a EGI 129 layout
 P.rmvart        = 1;        % 0= do not remove; 1= remove IC; 2= remove IC and wavelet thresholding
+P.rmvartfilt    = 1;        % Estimate the artifacts based on filtered data (1) or on original data (0). Default 1 
 P.saveica       = 1;        % Save a file with the ICA weights. Default True
 P.icaname       = 'ica_';   % Name added to save the ICA decomposition. Default 'ica_'
 P.icapath       = [];       % Path were to to save the ICA decomposition. By default in EEG.filepath
@@ -307,26 +308,68 @@ if gooddata
         
         %  7.7 Estimate the artifacts
         if P.rmvart~=0
-            %remove the components identied as artifacts
-            if P.npc~=0 && length(cmp2rmv)==P.npc~=0
-                eegirmv.data = zeros(size(eegi.data));
-            elseif P.npc==0 && length(cmp2rmv)==size(eegi.data,1)
-                eegirmv.data = zeros(size(eegi.data));
-            elseif ~isempty(cmp2rmv)
-                eegirmv = pop_subcomp( eegi, cmp2rmv, 0);
-            else 
-                eegirmv = eegi;
-            end
             
-            %store the artifacts
-            if P.rmvart==1
-                dataart(chi,smplsi) = dataart(chi,smplsi) + (eegi.data - eegirmv.data);
-                N(chi,smplsi) = N(chi,smplsi)+1;
-            elseif P.rmvart==2
-                dataart(chi,smplsi) = dataart(chi,smplsi) + (eegi.data - eegirmv.data) + artifacts;
-                N(chi,smplsi) = N(chi,smplsi)+1;
+            if P.rmvartfilt
+                %remove the components identied as artifacts
+                if P.npc~=0 && length(cmp2rmv)==P.npc~=0
+                    eegirmv.data = zeros(size(eegi.data));
+                elseif P.npc==0 && length(cmp2rmv)==size(eegi.data,1)
+                    eegirmv.data = zeros(size(eegi.data));
+                elseif ~isempty(cmp2rmv)
+                    eegirmv = pop_subcomp( eegi, cmp2rmv, 0);
+                else
+                    eegirmv = eegi;
+                end
+                
+                %store the artifacts
+                if P.rmvart==1
+                    dataart(chi,smplsi) = dataart(chi,smplsi) + (eegi.data - eegirmv.data);
+                    N(chi,smplsi) = N(chi,smplsi)+1;
+                elseif P.rmvart==2
+                    dataart(chi,smplsi) = dataart(chi,smplsi) + (eegi.data - eegirmv.data) + artifacts;
+                    N(chi,smplsi) = N(chi,smplsi)+1;
+                end
+                
+                clear eegi eegirmv
+        
+            else
+                clear eegi
+                
+                EEGi = pop_select( EEG,'channel', find(~bc));
+                EEGi = eeg_checkset(EEGi);
+                EEGi.icaweights     = W;
+                EEGi.icasphere      = S;
+                EEGi.icawinv        = pinv( EEGi.icaweights*EEGi.icasphere );
+                EEGi.icaact         = EEGi.icaweights *EEGi.icasphere * EEGi.data;
+                EEGi.icachansind    = (1:size(EEGi.data,1));
+                EEGi.reject.gcompreject = false(1,EEGi.nbchan);
+                EEGi.reject.gcompreject(artcomps) = 1;
+                EEGi = eeg_checkset(EEGi);
+                
+                %remove the components identied as artifacts
+                if P.npc~=0 && length(cmp2rmv)==P.npc~=0
+                    EEGirmv.data = zeros(size(EEGirmv.data));
+                elseif P.npc==0 && length(cmp2rmv)==size(EEGirmv.data,1)
+                    EEGirmv.data = zeros(size(eegirmv.data));
+                elseif ~isempty(cmp2rmv)
+                    EEGirmv = pop_subcomp( EEGi, cmp2rmv, 0);
+                else
+                    EEGirmv = EEGi;
+                end
+                
+                %store the artifacts
+                if P.rmvart==1
+                    dataart(chi,smplsi) = dataart(chi,smplsi) + (EEGi.data(:,smplsi) - EEGirmv.data(:,smplsi));
+                    N(chi,smplsi) = N(chi,smplsi)+1;
+                elseif P.rmvart==2
+                    dataart(chi,smplsi) = dataart(chi,smplsi) + (EEGi.data(:,smplsi) - EEGirmv.data(:,smplsi)) + artifacts;
+                    N(chi,smplsi) = N(chi,smplsi)+1;
+                end
+                
+                clear EEGi EEGirmv
+        
             end
-            
+                    
         end
         
         %  7.8 store the ICa decomposition matrixes
@@ -343,7 +386,6 @@ if gooddata
         ICA(i).icrmv = icrmv(i);
         ICA(i).varrmv = varrmv(i);
         
-        clear eegi eegirmv
         
     end
     
