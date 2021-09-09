@@ -56,17 +56,43 @@ nEp = size(EEG.data,3);
 %% Define artifacts
 
 % If requiered keep the previous information
-if P.keeppre
-    if isfield(EEG.artifacts,'BC')
-        BCold = EEG.artifacts.BC;
+if isnumeric( P.keeppre )
+    if (P.keeppre ==1)
+        if isfield(EEG.artifacts,'BC')
+            BCold = EEG.artifacts.BC;
+        else
+            BCold = false(nEl,1,nEp);
+        end
+        if isfield(EEG.artifacts,'BT')
+            BTold = EEG.artifacts.BT;
+        else
+            BTold = false(1,nS,nEp);
+        end
+    else
+        BCold = false(nEl,1,nEp);
+        BTold = false(1,nS,nEp);
     end
-    if isfield(EEG.artifacts,'BT')
-        BTold = EEG.artifacts.BT;
+elseif ischar( P.keeppre )
+    switch P.keeppre
+        case 'BT'
+            if isfield(EEG.artifacts,'BT')
+                BTold = EEG.artifacts.BT;
+                BCold = false(nEl,1,nEp);
+            else
+                BTold = false(1,nS,nEp);
+                BCold = false(nEl,1,nEp);
+            end
+        case 'BC'
+            if isfield(EEG.artifacts,'BC')
+                BCold = EEG.artifacts.BC;
+                BTold = false(1,nS,nEp);
+            else
+                BCold = false(nEl,1,nEp);
+                BTold = false(1,nS,nEp);
+            end
     end
-else
-    BCold = false(nEl,1,nEp);
-    BTold = false(1,nS,nEp);
 end
+
 BCnew = BCold;
 BTnew = BTold;
 BCBTnew = zeros(nEl,nS,nEp);
