@@ -152,7 +152,7 @@ for i=1:nfbands
     i_band = (freq > P.frqband(i,1)) & (freq <= P.frqband(i,2));
     
     p_band = log10( mean(P1(:,i_band,:,:),2) );
-    p_base = median(p_band(:));
+    p_base = nanmedian(p_band(:));
     p_band = p_band - p_base; 
     
 %     p_band = mean( log10(P1(:,i_band,:,:)), 2);
