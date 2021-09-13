@@ -86,6 +86,7 @@ end
 
 nSBJ = length(P.idxsbj);
 nCND = length(P.conditions);
+nSBJCND = nan(nCND,1);
 
 Avg = cell(1, nCND);
 CNDsIDX = nan(1, nCND);
@@ -93,17 +94,20 @@ for cnd = 1:nCND
     thecnd = find( strcmp(P.conditions{cnd},F{icndF}.val) );
     idxcnd = F{icndF}.g == thecnd;
     CNDsIDX(cnd) = thecnd;
+    sbjcounter = 0;
     for s=1:length(P.idxsbj)
         thesbj = s;
         idxsbj = F{isbjF}.g == thesbj;
         
         idxepoch = idxcnd(:) & idxsbj(:);
         if any(idxepoch)
-            Avg{cnd}{s} = eega_egglab2ft(EEGALL,'idxepoch',idxepoch,...
+            sbjcounter = sbjcounter+1;
+            Avg{cnd}{sbjcounter} = eega_egglab2ft(EEGALL,'idxepoch',idxepoch,...
                 'DataField',P.DataField,'TimeField',P.TimeField,'FreqField',P.FreqField);
         end
         
     end
+    nSBJCND(cnd) = sbjcounter;
 end
 
 %% ------------------------------------------------------------------------
@@ -166,15 +170,17 @@ cfg.avgoverchan         = P.avgoverchan;
 cfg.avgovertime         = P.avgovertime;
 
 if nCND==2
-    design1 = [ones(1,nSBJ) 2*ones(1,nSBJ)];
     if strcmp(P.design,'between')
         
+        design1 = [ones(1,nSBJCND(1)) 2*ones(1,nSBJCND(2))];
+    
         cfg.statistic       = 'indepsamplesT'; % use the independent samples T-statistic as a measure to evaluate the effect at the sample level
         cfg.design          = design1;
         cfg.ivar            = 1; % the raw of the design matrix containing the independent variable
         
     elseif strcmp(P.design,'within')
         
+        design1 = [ones(1,nSBJCND(1)) 2*ones(1,nSBJCND(2))];
         design2 = repmat((1:nSBJ), [1 nCND]);
         
         cfg.statistic       = 'depsamplesT';

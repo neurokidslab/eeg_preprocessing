@@ -41,6 +41,9 @@ BCTin = EEG.artifacts.BCT;
 BCT = false(nEl,nS,nEp);
 
 timelim = round(P.timelim*EEG.srate);
+if nS<=timelim
+    timelim = nS-1;
+end
 
 %% ------------------------------------------------------------------------
 %% Algorithm
@@ -54,7 +57,7 @@ for ep=1:nEp
         isgood_f = [ ((goodt(1:end-1) - goodt(2:end)) == 1) goodt(end) ];
         isgood_f = find(isgood_f);
         if ~isempty(isgood_i)
-            durgood = isgood_f - isgood_i;
+            durgood = isgood_f - isgood_i + 1;
             isshort = find(durgood<=timelim);
             for i=1:numel(isshort)
                 bct(el,isgood_i(isshort(i)):isgood_f(isshort(i))) = 1;
