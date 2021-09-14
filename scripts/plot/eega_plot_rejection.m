@@ -32,22 +32,21 @@ end
 
 % create the matrix holding what to mark as rejected
 winrej = [];
-
+colrejbct = [1 1 1];
 if plotbct  % plot in red the rejected data (white background)
     bct = reshape(EEG.artifacts.BCT,[nEl nSm*nEp]);
     for el=1:nEl
         btel = bct(el,:);
         btel_ini = find([btel(1) diff(btel,1,2)==1])';
         btel_fin = find([diff(btel,1,2)==-1 btel(end)])';
-        for i=1:length(btel_ini)
-            ch = false(1, nEl);
-            ch(el) = 1;
-            winreji = [btel_ini(i) btel_fin(i) 1 1 1 ch];
-            winrej = cat(1,winrej,winreji);
-        end
+        ch = false(length(btel_ini), nEl);
+        ch(:,el) = 1;
+        winrejel = cat(2,btel_ini,btel_fin, repmat(colrejbct,[length(btel_ini) 1]), ch);
+        winrej = cat(1,winrej,winrejel);
     end
 end
 
+colrejbt = [0.9 0.60 0.25];
 if plotbt % plot with orange background the rejected times 
     bt = reshape(EEG.artifacts.BT,[1 nSm*nEp]);
     bt_ini = find([bt(1) diff(bt,1,2)==1])';
@@ -65,10 +64,9 @@ if plotbt % plot with orange background the rejected times
 %             bt_fin = sort(bt_fin);
 %         end
 %     end
-    for i=1:length(bt_ini)
-        winreji = [bt_ini(i) bt_fin(i) 0.9 0.60 0.25 true(1, nEl)];
-        winrej = cat(1,winrej,winreji);
-    end
+
+    winrejel = cat(2,bt_ini,bt_fin, repmat(colrejbt,[length(bt_ini) 1]), true(length(bt_ini), nEl));
+    winrej = cat(1,winrej,winrejel);
 end
 
 if plotbc % plot in red the rejected channels 
