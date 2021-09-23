@@ -31,13 +31,14 @@ for i=1:2:length(Fnct)
         case 'eega_tTargetPCAxElEEG'
             new = 'pca_';
         case 'eega_tInterpSpatialEEG'
-            new = 'c_';
+            new = 'i_';
         case 'eega_tInterpSpatialSegmentEEG'
-            if any(strcmp(Fnct{i+1},'splicemethod')) && Fnct{i+1}{find(strcmp(Fnct{i+1},'splicemethod'))+1}
-                new = sprintf('c%d_',Fnct{i+1}{find(strcmp(Fnct{i+1},'splicemethod'))+1});
-            else
-                new = 'c0_';
-            end
+            new = 'is_';
+%             if any(strcmp(Fnct{i+1},'splicemethod')) && Fnct{i+1}{find(strcmp(Fnct{i+1},'splicemethod'))+1}
+%                 new = sprintf('i%d_',Fnct{i+1}{find(strcmp(Fnct{i+1},'splicemethod'))+1});
+%             else
+%                 new = 'i0_';
+%             end
         case 'eega_tArtifacts'
             new = 'a_';
         case 'eega_detrend'

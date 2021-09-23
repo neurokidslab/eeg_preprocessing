@@ -210,11 +210,12 @@ end
 if goodsbj
     newname = cell(size(theCND));
     for i=1:length(theCND)
-        if length(theCND{i})>15
-        newname{i} = theCND{i}(end-15:end);
-        else
-            newname{i} = theCND{i};
-        end
+        newname{i} = theCND{i};
+%         if length(theCND{i})>15
+%             newname{i} = theCND{i}(end-15:end);
+%         else
+%             newname{i} = theCND{i};
+%         end
     end
     newname = matlab.lang.makeValidName(newname);
     newname = matlab.lang.makeUniqueStrings(newname);

@@ -63,6 +63,20 @@ B.4 example_mlt_APICE_WICA_preprocessing
 -------------------------------------
 This code shows how to run the APICE+W-ICA pipeline to obtained continuos preprocess data
 
+NOTE: We found some compatibility problems in iMARA regarding the electrodes layouts 
+To solve this 
+1) We indicate how to change the names of the electrodes to be compatible with the standard system using the function eega_changechlable.
+See the example script to see how to indicate it in the structure input
+2) In the function iMARA from the iMARA toolbox we commented the lines 
+clab(7) = {'T7'};
+clab(24) = {'T8'};
+i = contains(loc_labels, clab(7)); loc_labels(i) = {EEG.chanlocs(7).labels};
+j = contains(loc_labels, clab(24)); loc_labels(j) = {EEG.chanlocs(24).labels};
+3) In the function getchanloc from the iMARA toolbox, we replaced 
+EEGchanslabels = {'Fp1';'AF3';'F7';'F3';'FC1';'FC5';'T7(T3)';'C3';'CP1';'CP5';'P7';'P3';'Pz';'PO3';'O1';'Oz';'O2';'PO4';'P4';'P8';'CP6';'CP2';'C4';'T8(T4)';'FC6';'FC2';'F4';'F8';'AF4';'Fp2';'Fz';'Cz'};
+by 
+EEGchanslabels = {'Fp1';'AF3';'F7';'F3';'FC1';'FC5';'T7';'C3';'CP1';'CP5';'P7';'P3';'Pz';'PPO1';'O1';'Oz';'O2';'PPO2';'P4';'P8';'CP6';'CP2';'C4';'T8';'FC6';'FC2';'F4';'F8';'AF4';'Fp2';'Fz';'Cz'};
+
 
 -------------------------------------
 B.5 example_mlt_APICE_ERPs
