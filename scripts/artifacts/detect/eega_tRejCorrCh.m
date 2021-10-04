@@ -11,7 +11,7 @@ P.twdur = 4;
 P.twstep = 2;
 P.dozscore = 0;
 P.relative = 0;
-P.topcorrch = 10;  % percentage of top correlations to compute the mean
+P.topcorrch = 5;  % percentage of top correlations to compute the mean
 P.mask = 0;
 
 P.updateBCT = 1;
