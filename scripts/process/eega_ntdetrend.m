@@ -36,7 +36,7 @@ end
 %% ------------------------------------------------------------------------
 %% Parameters
 
-P.weights   = [];  %[] | 'art' | [t1 t2] | logical matrix of the size of the data
+P.weights   = [];  %[] | 'art' | [t1 t2; t1 t2; ...] | logical matrix of the size of the data
 P.basis     = 'polynomials'; % 'polynomials' | 'sinusoids'
 P.thresh    = 3;
 P.niter     = 3;
