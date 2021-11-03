@@ -245,7 +245,7 @@ fprintf('Total bad channels _______________ %d\n', alld )
 %% Update the rejection matrix
 EEG.artifacts.BT = BT;
 EEG.artifacts.BC = BC;
-EEG.reject.rejmanualE = permute(EEG.artifacts.BC,[1 3 2]);
+% EEG.reject.rejmanualE = permute(EEG.artifacts.BC,[1 3 2]);
 fprintf('\n')
 if exist('eega_summarypp','file')==2
     EEG = eega_summarypp(EEG);

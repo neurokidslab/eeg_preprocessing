@@ -7,6 +7,7 @@ function [EEG, Y, F ] = eega_rmvbadepochs(EEG, varargin)
 P.DataField     = {'data'};
 P.FactorField   = {'F'};
 P.Silent        = 0;
+P.BadEpoch      = [];
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK
@@ -23,12 +24,26 @@ end
 %% ------------------------------------------------------------------------
 %% Obtain some usefull data
 sss = size(EEG.(P.DataField{1}));
-nEp = sss(end);
+nEp = size(EEG.(P.DataField{1}),3);
 
-if isfield(EEG,'artifacts') && isfield(EEG.artifacts,'BE')
-    BE = EEG.artifacts.BE; 
+if isempty(P.BadEpoch)
+    if isfield(EEG,'artifacts') && isfield(EEG.artifacts,'BE')
+        BE = EEG.artifacts.BE;
+    else
+        BE = false(1,1,nEp);
+    end
 else
     BE = false(1,1,nEp);
+    if ischar(P.BadEpoch)
+        switch P.BadEpoch
+            case 'last'
+                BE(end) = 1;
+            case 'first'
+                BE(1) = 1;
+        end
+    else
+        BE(P.BadEpoch) = 1;
+    end
 end
 goodEp = ~BE(:);
 nEpnew=sum(goodEp);
@@ -78,9 +93,9 @@ end
 if isfield(EEG,'reject') && isfield(EEG.reject,'rejmanual') && ~isempty(EEG.reject.rejmanual)
     EEG.reject.rejmanual = EEG.reject.rejmanual(goodEp);
 end
-if isfield(EEG,'reject') && isfield(EEG.reject,'rejmanualE') && ~isempty(EEG.reject.rejmanualE)
-    EEG.reject.rejmanualE = EEG.reject.rejmanualE(:,goodEp);
-end
+% if isfield(EEG,'reject') && isfield(EEG.reject,'rejmanualE') && ~isempty(EEG.reject.rejmanualE)
+%     EEG.reject.rejmanualE = EEG.reject.rejmanualE(:,goodEp);
+% end
 
 EEG.trials = nEpnew;
 

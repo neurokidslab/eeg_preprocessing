@@ -23,7 +23,7 @@
 % -------------------------------------------------------------------------
 
 
-function [ EEG, BE ] = eega_tDefBEdist( EEG, limDist, limBadDist, varargin )
+function [ EEG, BE ] = eega_tDefBEdistFull( EEG, limDist, limBadTimeDist, limMeanDist, limMaxDist, varargin )
 
 fprintf('### Identifying Bad Epochs Based on the Distance to the Mean ###\n' )
 
@@ -31,7 +31,7 @@ fprintf('### Identifying Bad Epochs Based on the Distance to the Mean ###\n' )
 %% Parameters
 P.keeppre       = 1;
 P.relative      = 1;
-P.maxloops      = 5;
+P.maxloops      = 1;
 P.plot          = 0;
 P.savefigure    = 0;
 P.where         = [];
@@ -53,7 +53,6 @@ nS   = size(EEG.data,2);
 nEp  = size(EEG.data,3);
 
 if nEp > 1
-    
     if P.keeppre && isfield(EEG.artifacts,'BE')
         BEold = EEG.artifacts.BE;
     else
@@ -147,19 +146,49 @@ if nEp > 1
         end
         RR = D > repmat(threshD,[1 size(D,2)]);
         
-        % thrshold for the amount of data too far away
-        if limBadDist<=1
-            Rt = (sum(RR,1)/nS)>limBadDist;
+        % threshold for the amount of data too far away
+        if limBadTimeDist<=1
+            Rt = (sum(RR,1)/nS)>limBadTimeDist;
         else
             P75 = prctile(sum(RR,1)/nS,75);
             P25 = prctile(sum(RR,1)/nS,25);
-            threshR = P75 + limBadDist .* (P75-P25);
+            threshR = P75 + limBadTimeDist .* (P75-P25);
             Rt = (sum(RR,1)/nS)>threshR;
         end
         Rt = Rt';
         
+        % threshold for the mean distance
+        if ~isempty(limMeanDist)
+            if P.relative
+                d = mean(D(:,~BE));
+                P75 = prctile(d(:),75);
+                P25 = prctile(d(:),25);
+                threshMeanD = P75 + limMeanDist .* (P75-P25);
+            else
+                threshMeanD = limMeanDist;
+            end
+            Rmean = mean(D)' > threshMeanD;
+        else
+            Rmean = false(size(mean(D)'));
+        end
+        
+        % threshold for the max distance
+        if ~isempty(limMaxDist)
+            if P.relative
+                d = max(D(:,~BE));
+                P75 = prctile(d(:),75);
+                P25 = prctile(d(:),25);
+                threshMaxD = P75 + limMaxDist .* (P75-P25);
+            else
+                threshMaxD = limMaxDist;
+            end
+            Rmax = max(D)' > threshMaxD;
+        else
+            Rmax = false(size(max(D)'));
+        end
+        
         % Rejection vector
-        R = Rt;
+        R = Rt | Rmean | Rmax;
         
         % check if new data was rejected
         if all( ( R | BE ) == BE)
@@ -171,7 +200,7 @@ if nEp > 1
         
         ci=ci+1;
     end
-    TOT = [mean(D,1)' sum(RR,1)'/nS];
+    TOT = [mean(D,1)' max(D,[],1)' sum(RR,1)'/nS];
     
     %% ------------------------------------------------------------------------
     %% Display rejected data
@@ -196,7 +225,6 @@ if nEp > 1
     if P.plot
         plottrialsrej(BE,BEd,BEold,D,TOT,P,EEG.filename,EEG.filepath)
     end
-    
 else
     fprintf('Not enouth good epochs\n')
 end
@@ -213,7 +241,7 @@ AXyLim = [0 0.1 0.90 1];
 axbox  = 0.050;
 axboxm  = 0.020;
 
-ppp ={'mean dist' '% of bad'};
+ppp ={'mean dist' 'max dist' '% of bad'};
 
 col_good    = [0.1953    0.8008    0.1953];
 col_new     = [1.0000    0.8398         0];

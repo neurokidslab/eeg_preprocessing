@@ -40,7 +40,7 @@ for e=1:length(Targev)
     
     % Change
     if all(cond)
-        fprintf('Event number: %05.0d\n', theev)
+%         fprintf('Event number: %05.0d\n', theev)
         
         % create the field if it does not exist
         if ~isfield(EEGout.event(theev), field)
