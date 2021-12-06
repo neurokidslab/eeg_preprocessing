@@ -334,6 +334,7 @@ for i=1:size(Ed,1)
         fvalsextra_i = Ed(i,id_extravals);
         fvalsextra_i(cellfun(@isempty,fvalsextra_i)) = [];
         
+        % add the event
         fnamesbase_i = {'type' 'latency' 'urevent'};
         fvalsbase_i = cat(2,TYPEevt(i), TIMEevt(i), length(EEG.urevent)+1);
         
@@ -343,6 +344,15 @@ for i=1:size(Ed,1)
         evn = length(EEG.event)+1;
         for ff=1:length(fnames_i)
             EEG.event(evn).(fnames_i{ff}) = fvals_i{ff};
+        end
+        
+        % add the urevent - added by Ana Flo 06/12/2021
+        fnames_i_ur = {'type' 'latency'};
+        fvals_i_ur = cat(2,TYPEevt(i), TIMEevt(i));
+        
+        evn = length(EEG.urevent)+1;
+        for ff=1:length(fnames_i_ur)
+            EEG.urevent(evn).(fnames_i_ur{ff}) = fvals_i_ur{ff};
         end
         
         % update the counter

@@ -83,11 +83,16 @@ for k=1:numel(REfev)
             
             % add the urevent - added by Ana Flo 06/12/2021
             fnames_i_ur = {'type' 'latency'};
-            fvals_i_ur = cat(2,fvals_i(strcmp(fnames_i,'type')), fvals_i(strcmp(fnames_i,'latency')));
+            fvals_i_ur = cat(2,fvals_i(strcmp(fnames_i,'type')), TIMEevt(i));
             evn = length(EEG.urevent)+1;
             for ff=1:length(fnames_i_ur)
                 EEG.urevent(evn).(fnames_i_ur{ff}) = fvals_i_ur{ff};
             end
+            
+            % Check the structure - added by Ana Flo 06/12/2021
+            EEG = eeg_checkset(EEG, 'eventconsistency');
+            EEG = eeg_checkset(EEG, 'checkur');
+
             
 %             EEGout = pop_editeventvals( EEGout, 'add', [evpos fvals]);  - commented by Ana Flo 06/12/2021
 %             EEGout = pop_editeventvals( EEGout, 'add', [1 fvals]);
@@ -96,10 +101,6 @@ for k=1:numel(REfev)
         end
     end
 end
-% Check the structure - added by Ana Flo 06/12/2021
-EEG = eeg_checkset(EEG, 'eventconsistency');
-EEG = eeg_checkset(EEG, 'checkur');
-
 fprintf('\n')
 
 fprintf('\n')
