@@ -19,13 +19,13 @@ clc
 % Specify the paths to the different relevant folders
 
 % Folder where EEGLAB is:
-Path2EEGLAB = fullfile('C:\Users\an251296\Documents\MATLAB\toolbox','eeglab2020_0');
+Path2EEGLAB = fullfile('C:\Users\anafl\Documents\MATLAB','eeglab2022.1');
 % Folder where the function for APICE are:
-Path2APICE = fullfile('C:\Users\an251296\nextCloud\MATLAB\mytoolbox','eeg_preprocessing');
+Path2APICE = fullfile('G:\My Drive\Work\MATLAB\mytoolbox','eeg_preprocessing');
 % Folder where iMARA is:
-Path2iMARA = fullfile('C:\Users\an251296\Documents\MATLAB\toolbox','iMARA-main');
+Path2iMARA = fullfile('C:\Users\anafl\Documents\MATLAB','iMARA-main');
 % Current path:
-Path0 = 'C:\Users\an251296\nextCloud\MATLAB\mytoolbox\eeg_preprocessing\examples';
+Path0 = 'G:\My Drive\Work\MATLAB\mytoolbox\eeg_preprocessing\examples';
 % Folder where the scripts defining the parameters are:
 Path2Parameters = fullfile(Path0,'parameters');
 % Channels location file
@@ -576,3 +576,17 @@ end
 % -------------------------------------------------------------------------
 % Print a preprocessing report for all the subjetcs
 eega_printsummary('erp_*.set', Path2DataERP, Perp.report.patternname, Perp.report.patternn, 0);
+Footer
+© 2022 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
