@@ -1,0 +1,4 @@
+# APICE bad segments
+# onset, duration, description
+98.402000,1.798000,bad_apice
+200.702000,1.300000,bad_apice

@@ -21,7 +21,7 @@ clc
 % Folder where EEGLAB is:
 Path2EEGLAB = fullfile('C:\Users\anafl\Documents\MATLAB','eeglab2022.1');
 % Folder where the function for APICE are:
-Path2APICE = fullfile('G:\My Drive\Work\MATLAB\mytoolbox','eeg_preprocessing');
+Path2APICE = fullfile('C:\Users\anafl\Documents\GitHub','eeg_preprocessing');
 % Folder where iMARA is:
 Path2iMARA = fullfile('C:\Users\anafl\Documents\MATLAB','iMARA-main');
 % Current path:
