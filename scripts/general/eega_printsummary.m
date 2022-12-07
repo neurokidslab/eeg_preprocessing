@@ -1,4 +1,25 @@
-function [T] = eega_printsummary(filenames, pathIn, patternname, patternn, silent)
+% This functions gives a summary of the preprocessing for a dataset
+%
+% INPUTS:
+%
+% filenames     It can be a cell array with the complete file names of all 
+%               the files to include in the report. In this case, pathIn 
+%               should be empty.
+%               Otherwise, if pathIn is provided, it should be a string 
+%               that serves to retrive all the files in pathIn.
+%
+% path2data     Path to the files. Only necessary if a string pattern is
+%               provided in filenames. It is also the path were the summary
+%               is saved
+%
+% patternname   Pattern to find in the names to create the table 
+%               (subjetcs identifier). If empty, the whole files name are 
+%               used
+% patternn      Number of caracters to use from the begiging of the patter 
+%               to create the table. If empty, the name is extracted from 
+%               the begign of the patter till the end of the name
+
+function [T] = eega_printsummary(filenames, path2data, patternname, patternn, silent)
 if nargin<5
     silent=1;
 end
@@ -8,22 +29,34 @@ end
 if nargin<3
     patternname=[];
 end
-
+if nargin<2
+    path2data=[];
+end
+if ischar(filenames) && isempty(path2data)
+    error('eega_printsummary: not path to the files was provided')
+end
 
 %% List of files
-ssList = dir(fullfile(pathIn,filenames));
-rem = false(length(ssList),1);
-for tf = 1:length(ssList)
-    if ssList(tf).name(1)=='.';
-        rem(tf) = 1;
+if ischar(filenames)
+    ssList = dir(fullfile(path2data,filenames));
+    rem = false(length(ssList),1);
+    for tf = 1:length(ssList)
+        if ssList(tf).name(1)=='.';
+            rem(tf) = 1;
+        end
     end
+    ssList(rem) = [];
+    nsbj = length(ssList);
+    filenames = cell(nsbj,1);
+    for i=1:length(ssList)
+        filenames{i} = fullfile(ssList(i).folder, ssList(i).name);
+    end
+else
+    nsbj = length(filenames);
 end
-ssList(rem) = [];
-subjects = 1:length(ssList);
-nsbj = length(subjects);
 
 %% Do it for all the files
-if ~isempty(subjects)
+if nsbj>0
     
     SBJ = cell(nsbj,1);
     
@@ -42,13 +75,13 @@ if ~isempty(subjects)
         
         % -----------------------------------------------------------------
         % Load the data
-        [~,nameSubj,Ext] = fileparts(ssList(subjects(s)).name);
+        [folderSubj,nameSubj,Ext] = fileparts(filenames{s});
         fprintf('\n%s\nSubject %s\n',repmat('-',[1 50]),nameSubj)
         clear EEG
         if strcmp(Ext,'.set')
-            EEG = pop_loadset( ssList(s).name, pathIn );
+            EEG = pop_loadset( [nameSubj Ext], folderSubj );
         elseif strcmp(Ext,'.mat')
-            EEG = load(fullfile(pathIn,  ssList(s).name));
+            EEG = load(fullfile(folderSubj,  [nameSubj Ext]));
             feeg = fieldnames(EEG);
             EEG = EEG.(feeg{1});
         end
@@ -150,7 +183,7 @@ if ~isempty(subjects)
     T = cell(1,length(summaryIDX));
     for j=1:length(summaryIDX)
         T{j} = table(Nch(:,j),Nspl(:,j),Nep(:,j),BCT(:,j),CCT(:,j),BT(:,j),BC(:,j), 'VariableNames',VarNames,'RowNames',SBJ);
-        writetable(T{j},fullfile(pathIn,sprintf('%s.txt',what{j})),'Delimiter','\t','WriteRowNames',1);
+        writetable(T{j},fullfile(path2data,sprintf('%s.txt',what{j})),'Delimiter','\t','WriteRowNames',1);
         if ~silent
             fprintf('\n%s\nSummary for all subject: %s \n\n',repmat('-',[1 50]),what{j})
             disp(T{j})

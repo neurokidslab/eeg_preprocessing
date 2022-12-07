@@ -1,11 +1,11 @@
-% This function function shows the events of some types and asks which
-% events you want to delete
+% This function function removs events
 %
 % INPUTS:
 %
 %   EEG         = EEGLab structure with the EEG data
-%   showevents  = events to show
-%   exclevents  = events to avoid
+%   targetEv    = events to remove
+%   exclEv      = events to keep
+%   tormv       = specify 'all' or some events to remove
 %
 % OUTPUT:
 %
@@ -25,7 +25,7 @@ if nargin < 3
     exclEv = [];
 end
 if nargin < 4
-    tormv = [];
+    tormv = 'all';
 end
 
 if ischar(targetEv)
