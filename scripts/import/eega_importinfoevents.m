@@ -24,10 +24,14 @@ function EEG = eega_importinfoevents( EEG, pathIn, event0, eventtype, latlim )
 fprintf('### Importing information of the events ###\n')
 
 %% Oprtional inputs
+if nargin<2; pathIn = []; end
 if nargin<3; event0 = []; end
 if nargin<4; eventtype = []; end
 if nargin<5; latlim = 3; end
 
+if isempty(pathIn)
+    pathIn = EEG.filepath;
+end
 if isempty(eventtype)
     ev = cell(length(EEG.event),1);
     for e=1:length(EEG.event)

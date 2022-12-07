@@ -67,12 +67,24 @@ thefunctions = varargin(~idop);
 
 %% =========================================================================
 %% Ask which on which files de action wants to be perfomed
-fprintf( 'What would you like to do?\n')
-fprintf( '	1. Run it for all the files found and overwrite previous output files (1)\n')
-fprintf( '	2. Run it only for the new files (2)\n')
-fprintf( '	3. Ask in each case if a previous analysis is found (3)\n')
-while ~any(runto==[1 2 3]);
-    runto = input(sprintf('Chose an option 1, 2 or 3: '));
+if ~any(runto==[1 2 3])
+    fprintf( 'What would you like to do?\n')
+    fprintf( '	1. Run it for all the files found and overwrite previous output files (1)\n')
+    fprintf( '	2. Run it only for the new files (2)\n')
+    fprintf( '	3. Ask in each case if a previous analysis is found (3)\n')
+    while ~any(runto==[1 2 3])
+        runto = input(sprintf('Chose an option 1, 2 or 3: '));
+    end
+else
+    switch runto
+        case 1
+            fprintf( 'The functions will be run on all the files found and overwrite previous output files\n')
+        case 2
+            fprintf( 'The functions will be run only for the new files\n')
+        case 3
+            fprintf( 'For each subject, if the input file is found, it will be ask whether to run or not the functions\n')
+    end
+
 end
 
 %% ========================================================================
