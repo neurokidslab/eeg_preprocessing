@@ -4,8 +4,9 @@ fprintf('### Manual rejection of epochs ###\n' )
 
 %% ------------------------------------------------------------------------
 %% Parameters
-P.keeppre       = 0;
+P.keeppre       = 1;
 P.plot          = 1;
+P.BEm           = [];
 
 [P, OK, extrainput] = eega_getoptions(P, varargin);
 if ~OK
@@ -50,10 +51,10 @@ else
 	CCT = false(nEl,nS,nEp);
 end
 
-BEm = false(nEp,1);
 BE = BEold;
+BEm = false(nEp,1);
+
 if P.plot
-    BEm = false(nEp,1);
     ax_bct = [600 300];
     ax_bc = [30 300];
     ax_bt = [600 30];
@@ -136,10 +137,15 @@ if P.plot
         close(hfep)
     end
 else
-    badep = input('Epochs to reject manually:');
-    BEm(badep)=true;
+    if ~isempty(P.BEm)
+        BEm(P.BEm) = true;
+    else
+        badep = input('Epochs to reject manually:');
+        BEm(badep) = true;
+    end
 end
 
+BEm = permute(BEm,[2 3 1]);
 EEG.artifacts.BEm = BEm;
 EEG.artifacts.BE = BEm | BE;
 

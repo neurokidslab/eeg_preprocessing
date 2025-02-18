@@ -16,10 +16,9 @@ duration = duration/EEG.srate;
 description = repmat({'bad_apice'},[length(badi) 1]);
 
 % save in a text file
-filename = fullfile(outputfolder,[filename '_BT.txt']);
+% filename = fullfile(outputfolder,[filename '_BT.txt']);
 fid=fopen(filename,'w');
-fprintf(fid,'# APICE bad segments\n');
-fprintf(fid,'# onset, duration, description\n');
+fprintf(fid,'onset, duration, description\n');
 for i=1:length(badi)
     fprintf(fid,'%f,%f,%s\n',badi(i),duration(i),description{i});
 end

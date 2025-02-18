@@ -5,8 +5,8 @@
 %
 % INPUTS
 % EEG           EEG structure
-% TableCNDs     it specifies what to average. 
-%               
+% TableCNDs     it specifies what to average.
+%
 %               * It can be a table specifing how to average trials
 %       - In each column it has the factors that will be usded to define
 %       conditions (the name has to be same than in F{k}.name, and the
@@ -33,16 +33,16 @@
 %               * It can also be a cell array indicating the factors to
 %               take into acount to define conditions. In this case the
 %               table will be built
-%               * If it is empty all trials are average. 
+%               * If it is empty all trials are average.
 %
 % OPTIONAL INPUTS
-% DataField     fields in EEG containig the data. It can be a cell with 
-%               multiple fields. In that case the baseline correction is 
+% DataField     fields in EEG containig the data. It can be a cell with
+%               multiple fields. In that case the baseline correction is
 %               applied to all fileds. Default {'data'}
-% FactorField   field in EEG containg the factors characterizing epochs. 
+% FactorField   field in EEG containg the factors characterizing epochs.
 %               Default 'F'
 % dim2avg       dimention across which data should be average. Default the
-%               last dimension 
+%               last dimension
 %
 % OUTPUTS
 % EEG           EEG structure with average data
@@ -103,7 +103,7 @@ else
     F = EEG.(P.FactorField{1});
     [condition, theCND, trialsxCND, Favg] = cnd_findtrialsxcond(TableCNDs, F);
     ntheCND = length(theCND);
-end   
+end
 
 %% ------------------------------------------------------------------------
 %% Average
@@ -119,7 +119,7 @@ Derror=cell(1,length(P.DataField));
 if goodsbj
     for i=1:length( P.DataField)
         s = size(EEG.(P.DataField{i}));
-        ss = s; 
+        ss = s;
         if length(ss)==2; ss = [ss 1]; end
         ss(dim2avg) = [];
         Dmean{i} = nan([ss ntheCND]);
@@ -133,15 +133,15 @@ if goodsbj
             EEG.(P.DataField{i})=bsxfun(@mtimes,EEG.(P.DataField{i}),P.Weights*length(P.Weights));
         end
         for c=1:ntheCND
-            
+
             if dim2avg==3
                 dat = EEG.(P.DataField{i})(:,:,condition==c);
             elseif dim2avg==4
                 dat = EEG.(P.DataField{i})(:,:,:,condition==c);
-%             else
-%                 dat = takelstdim(EEG.(P.DataField{i}), find(condition==c));
+                %             else
+                %                 dat = takelstdim(EEG.(P.DataField{i}), find(condition==c));
             end
-            
+
             if isempty(P.trimmean) || (P.trimmean==0) || size(dat,3)<3
                 [avg, sd, n, err] = meanstats(dat, dim2avg);
             else
@@ -178,49 +178,51 @@ else
 end
 
 % add factors that are consistent
-favgnames = TableCNDs.Properties.VariableNames;
-for fi=1:length(EEG.F)
-    if ~any(strcmp(EEG.F{fi}.name, favgnames))
-        vals = nan(size(TableCNDs,1),1);
-        for icnd=1:size(TableCNDs,1)
-            ok  = any(P.factors2keep == fi);
-            idxcnd = condition==icnd;
-            if any(idxcnd)
-                valsi = EEG.F{fi}.g(idxcnd);
-                if length(unique(valsi))==1
-                    vals(icnd) = unique(valsi);
+if ~isempty(TableCNDs)
+    favgnames = TableCNDs.Properties.VariableNames;
+    for fi=1:length(EEG.F)
+        if ~any(strcmp(EEG.F{fi}.name, favgnames))
+            vals = nan(size(TableCNDs,1),1);
+            for icnd=1:size(TableCNDs,1)
+                ok  = any(P.factors2keep == fi);
+                idxcnd = condition==icnd;
+                if any(idxcnd)
+                    valsi = EEG.F{fi}.g(idxcnd);
+                    if length(unique(valsi))==1
+                        vals(icnd) = unique(valsi);
+                    else
+                        ok = 0;
+                    end
                 else
-                    ok = 0;
+                    vals(icnd) = 1;
                 end
-            else
-                vals(icnd) = 1;
+            end
+            if ok
+                fact = length(Favg)+1;
+                Favg{fact}.name = EEG.F{fi}.name;
+                Favg{fact}.val = EEG.F{fi}.val;
+                Favg{fact}.g = vals;
             end
         end
-        if ok
-            fact = length(Favg)+1;
-            Favg{fact}.name = EEG.F{fi}.name;
-            Favg{fact}.val = EEG.F{fi}.val;
-            Favg{fact}.g = vals;
-        end
-   end
+    end
 end
 
 %% ------------------------------------------------------------------------
 %% Define the as empty is it was a bad subject
 if goodsbj
+    if isfield(EEG,'TrialsxCND')
+        for icnd=1:length(theCND)
+            trialsxCND(:,icnd) = sum(EEG.TrialsxCND{:,condition==icnd},2);
+        end
+    end
     newname = cell(size(theCND));
     for i=1:length(theCND)
         newname{i} = theCND{i};
-%         if length(theCND{i})>15
-%             newname{i} = theCND{i}(end-15:end);
-%         else
-%             newname{i} = theCND{i};
-%         end
     end
     newname = matlab.lang.makeValidName(newname);
     newname = matlab.lang.makeUniqueStrings(newname);
     TrialsxCND = array2table(trialsxCND,'VariableNames',newname');
-else    
+else
     TrialsxCND = [];
 end
 
@@ -293,7 +295,7 @@ end
 %% ========================================================================
 
 % function Txavg = buildtablecnds(Fxavg, F)
-% 
+%
 % tb={};
 % vnames={};
 % k=0;
@@ -322,8 +324,8 @@ end
 %     Txavg=[];
 % end
 % end
-% 
-% 
+%
+%
 % function Favg = definefactorsfromtableCNDs(TableCNDs,theCND)
 % ntheCND = length(theCND);
 % Favg=cell(1,size(TableCNDs,2));
@@ -340,7 +342,7 @@ end
 %     end
 % end
 % end
-% 
+%
 % function Favg=definefactorsfromtableFnew(TableFnew,theCND)
 % ntheCND = length(theCND);
 % Fnew = TableFnew.Properties.VariableNames;
@@ -354,8 +356,8 @@ end
 %         Favg{f}.g(c) = find(strcmp(TableFnew{c,f},Favg{f}.val));
 %     end
 % end
-% 
-% 
+%
+%
 % end
 
 function plotavg(Davg,Favg,times,trialsxCND)
@@ -375,12 +377,12 @@ figure('Position',[1 1 fig_],'Name',sprintf('SBJ %s',nameSubj));
 
 for c=1:nCND
     axes('Position',[m_avg(1) (nCND-c)*ax_avg(2)+(nCND-c+1)*m_avg(2) ax_avg]);
-    
+
     dc=Davg(:,:,c);
     if any(~isnan(dc(:)))
         plot(times,Davg(:,:,c)','k')
         ylim(yl)
-        
+
         text(times(10),yl(1)+0.1*diff(yl),sprintf('n trials : %d',trialsxCND(c)))
         s='';
         for f=1:length(Favg)

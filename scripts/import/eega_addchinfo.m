@@ -5,7 +5,7 @@ try
     check = 1:size(chanlocs,2);
     rm = zeros(1, size(chanlocs,2));
     for k=1:numel(check)
-        if strcmp(chanlocs(check(k)).type,'FID')
+        if isfield(chanlocs(check(k)),'type') && strcmp(chanlocs(check(k)).type,'FID')
             rm(check(k)) = 1;
         end
     end

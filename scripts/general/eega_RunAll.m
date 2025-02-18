@@ -185,16 +185,22 @@ for s = 1:length(subjects)  % loop over subjects
             thefun = str2func(thefunctions{fun_i});
             inputs = thefunctions{fun_i+1};
             
-            if ~isempty(EEG.data)
-                if nargout(thefun)==0
-                    thefun(EEG, inputs{:});
-                else
-                    EEG = thefun(EEG, inputs{:});
-                    dosave = 1;
-                end
+            if nargout(thefun)==0
+                thefun(EEG, inputs{:});
             else
-                warning('Empty data!')
+                EEG = thefun(EEG, inputs{:});
+                dosave = 1;
             end
+%             if ~isempty(EEG.data)
+%                 if nargout(thefun)==0
+%                     thefun(EEG, inputs{:});
+%                 else
+%                     EEG = thefun(EEG, inputs{:});
+%                     dosave = 1;
+%                 end
+%             else
+%                 warning('Empty data!')
+%             end
             
             fun_i = fun_i+2;            
         end
