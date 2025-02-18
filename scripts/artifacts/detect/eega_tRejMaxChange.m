@@ -113,7 +113,7 @@ for j=1:nR
                 dd = dd(:);
                 perc = prctile(dd,[25 50 75]);
                 IQ   = perc(3)-perc(1);  
-                t_u_el  = perc + P.thresh(j)*IQ;
+                t_u_el  = perc(3) + P.thresh(j)*IQ;
                
                 Ru(el,:,:) = Ru(el,:,:) | change(el,:,:)>t_u_el;
                 T(el,j) = t_u_el;

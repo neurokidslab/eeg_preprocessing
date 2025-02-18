@@ -98,7 +98,7 @@ for ep = 1:nEp
         corrs(logical(eye(size(corrs,1)))) = NaN;
         % compute the average correlation for the top channels
         ptop = prctile(corrs,100-P.topcorrch,1);
-        corrs(corrs<=repmat(ptop,[size(corrs,1) 1])) = NaN;
+        corrs(corrs<repmat(ptop,[size(corrs,1) 1])) = NaN;
         avgcorrs = nanmean(corrs);
         % store the data
         CC(:,itw,ep) = avgcorrs;
