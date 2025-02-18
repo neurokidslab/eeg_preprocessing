@@ -30,6 +30,8 @@ P.numrandomization  = 1000;
 P.clusteralpha      = 0.05; % alpha level of the sample-specific test statistic that will be used for thresholding
 P.clusterstatistic  = 'maxsum'; % test statistic that will be evaluated under the permutation distribution.
 P.correctm          = 'cluster'; %string, apply multiple-comparison correction, 'no', 'max', cluster', 'bonferroni', 'holm', 'hochberg', 'fdr' (default = 'no')
+P.tfce_H            = 2; 
+P.tfce_E            = 0.5; 
 P.alpha             = 0.025; % alpha level of the permutation test
 P.tail              = 0; % -1, 1 or 0 (default = 0); one-sided or two-sided test
 P.correcttail       = 'no'; %string, correct p-values or alpha-values when doing a two-sided test, 'alpha','prob' or 'no' (default = 'no')
@@ -159,16 +161,20 @@ end
 cfg.method              = P.method; % use the Monte Carlo Method to calculate the significance probability
 cfg.correctm            = P.correctm;
 cfg.parameter           = 'avg';
-cfg.clusteralpha        = P.clusteralpha; 
-cfg.clusterstatistic    = P.clusterstatistic; 
 cfg.alpha               = P.alpha;
 cfg.tail                = P.tail;
 cfg.correcttail         = P.correcttail; 
-cfg.clustertail         = P.clustertail;
-cfg.numrandomization    = P.numrandomization; 
+cfg.numrandomization    = P.numrandomization;
 cfg.avgoverchan         = P.avgoverchan;
 cfg.avgovertime         = P.avgovertime;
-
+if strcmp(cfg.correctm,'tfce')
+    cfg.tfce_H            = P.tfce_H;
+    cfg.tfce_E            = P.tfce_E;
+elseif strcmp(cfg.correctm,'cluster')
+    cfg.clusteralpha        = P.clusteralpha;
+    cfg.clusterstatistic    = P.clusterstatistic;
+    cfg.clustertail         = P.clustertail;
+end
 if nCND==2
     if strcmp(P.design,'between')
         

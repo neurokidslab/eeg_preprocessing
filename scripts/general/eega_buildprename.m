@@ -44,7 +44,10 @@ for i=1:2:length(Fnct)
         case 'eega_detrend'
             new = 'd_';
         case 'eega_ntdetrend'
-            new = 'rd_';
+            new = '_';
+            for k=1:length(Fnct{i+1}{1})
+                new = [sprintf('rd%d',Fnct{i+1}{1}(k)) new];
+            end
         case 'pop_resample'
             new = sprintf('rs%d_',Fnct{i+1}{1});
         case 'eega_resample'

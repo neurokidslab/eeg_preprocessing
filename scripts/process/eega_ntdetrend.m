@@ -52,10 +52,11 @@ if isempty(P.weights)
     fprintf('No initial weights were provided\n')
 else
     if ischar(P.weights)
-        if strcmp(P.weights,'arttifacts.BCT')
-            if isfield(EEG,'artifacts') && isfield(EEG.artifacts,'BCT')
+        if strcmp(P.weights,'artifacts')
+            if isfield(EEG,'artifacts')
                 fprintf('Artifacted samples have an initial weight equal to 0\n')
                 P.weights = ~EEG.artifacts.BCT;
+                P.weights(repmat(EEG.artifacts.BT,[size(EEG.data,1) 1 1])) = 0;
                 weightsmat = 1;
             else
                 warning('%s field not found. No initial weights will be used',P.weights)
@@ -82,7 +83,7 @@ else
                 weightsmat = 0;
             end
         end
-    elseif isnumeric(P.weights)
+    elseif isnumeric(P.weights) || islogical(P.weights)
         if size(P.weights,2)==2
             fprintf('Initial weights equal to 1 for samples in the time windows\n')
             tlimits = P.weights;
@@ -128,11 +129,10 @@ for epi=1:size(EEG.data,3)
         else
             w = P.weights;
         end
-        [yout, wout] = nt_detrend(y, order, w, P.basis, P.thresh, P.niter, P.wsize);
-        yout = yout';
-        wout = wout';
-        
-        EEG.data(chi,:,epi) = yout;
+        for j=1:length(order)
+            [yrd, wnew] = nt_detrend(y, order(j), w, P.basis, P.thresh, P.niter, P.wsize);
+        end
+        EEG.data(chi,:,epi) = yrd;
     end
     
 end

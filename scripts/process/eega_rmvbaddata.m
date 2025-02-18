@@ -150,11 +150,12 @@ if nBad>0
             
     end
     
-    varargout=cell(1,length(P.DataField));
-    for i=1:length(P.DataField)
-        varargout{i}=EEG.(P.DataField{i});
-    end
     
     
 end
+varargout=cell(1,length(P.DataField));
+for i=1:length(P.DataField)
+    varargout{i}=EEG.(P.DataField{i});
+end
+
 end

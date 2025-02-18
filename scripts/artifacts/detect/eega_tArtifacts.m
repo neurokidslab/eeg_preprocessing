@@ -1,6 +1,6 @@
 % Function that identifies motion artifacts. by appling different
 % algorithms.
-% The steps to be applied for the identification are indicated in the 
+% The steps to be applied for the identification are indicated in the
 % structure Art
 %
 % -------------------------------------------------------------------------
@@ -9,20 +9,21 @@ function EEG = eega_tArtifacts( EEG, Art, varargin )
 
 % possible steps to detect artifacts
 StepsDetect = { 'eega_tRejPwr',...
-                'eega_tRejCorrCh',...
-                'eega_tRejTimeVar',...
-                'eega_tRejAmp',...
-                'eega_tRejRunningAvg',...
-                'eega_tRejFastChange',...
-                'eega_tRejDerivate',...
-                'eega_tRejAmpElecVar',...
-                };
+    'eega_tRejCorrCh',...
+    'eega_tRejTimeVar',...
+    'eega_tRejAmp',...
+    'eega_tRejRunningAvg',...
+    'eega_tRejFastChange',...
+    'eega_tRejMaxChange',...
+    'eega_tRejDerivate',...
+    'eega_tRejAmpElecVar',...
+    };
 % possible steps that are appplied always at the end of each loop
 StepsPostDetect = { 'eega_tRejChPercSmpl';...
-                    'eega_tRejSmplPercCh';...
-                    'eega_tIncShortBad';...
-                    'eega_tRejShortGood';...
-                    'eega_tMask'};
+    'eega_tRejSmplPercCh';...
+    'eega_tIncShortBad';...
+    'eega_tRejShortGood';...
+    'eega_tMask'};
 
 %% ========================================================================
 %% Parameters
@@ -154,165 +155,169 @@ else
     StepsArt = {};
 end
 
-%% ========================================================================
-%% Filter data before rejection if requeired
-if cnf.FilterDo    
-    dat_orig = EEG.data;
-    if ~isempty(cnf.FilterLp)
-        EEG = pop_eegfiltnew(EEG, [], cnf.FilterLp, [], 0, [], [], 0);
-    end
-    if ~isempty(cnf.FilterHp)
-        EEG = pop_eegfiltnew(EEG, cnf.FilterHp, [], [], 0, [], [], 0);
-    end
-end
 
-%% ========================================================================
-%% Reject based on the different algorithms
-stepname = cell(nSteps,1);
-stepdone = false(nSteps,1);
-parameters = cell(nSteps,1);
-RejxStep = zeros(nSteps,1);
-RejxStepNew = zeros(nSteps,1);
-ok = 0;
-loop = 0;
+if ~isempty(EEG.data)
 
-while ~ok
-    
-    loop = loop+1;    
-    fprintf('\n******** LOOP %d ********\n\n',loop)
-    BCT_pre = BCT;
-        
-    %% --------------------------------------------------------------------
-    %% Algorithms to detect artifacts
-    for i=1:length(Art) 
-        if any(strcmp(StepsArt,Art(i).algorithm)) && any(Art(i).loops==loop)
-            step = sum(stepdone)+1;
-            thealgh = Art(i).algorithm;
-            flds = fieldnames(Art(i).P);
-            vals = struct2cell(Art(i).P);
-            inputs = cat(1,flds(:)',vals(:)');
-            fhandle = str2func(thealgh);
-            
-            fprintf('%s\n',repmat('-',[1 30]))
-            fprintf('Rejection step % 2d: %s\n\n',step,thealgh)
-            
-            [ ~, bct ] = fhandle( EEG, inputs{:});
-            
-            
-            nsmplrej = sum(bct(:));
-            nnewsmplrej = bct & ~BCT;
-            nnewsmplrej = sum(nnewsmplrej(:));
-            RejxStep(step) = nsmplrej;
-            RejxStepNew(step) = nnewsmplrej;
-            BCT = bct | BCT;
-            BCTr{step} = bct;
-            
-            fprintf('New data rejected % 4.2f %%\n\n', nnewsmplrej/nsmpl*100)
-            
-            stepdone(step) = 1;
-            stepname{step} = thealgh;
-            parameters{step} = Art(i).P;
-            
+    %% ========================================================================
+    %% Filter data before rejection if requeired
+    if cnf.FilterDo
+        dat_orig = EEG.data;
+        if ~isempty(cnf.FilterLp)
+            EEG = pop_eegfiltnew(EEG, [], cnf.FilterLp, [], 0, [], [], 0);
+        end
+        if ~isempty(cnf.FilterHp)
+            EEG = pop_eegfiltnew(EEG, cnf.FilterHp, [], [], 0, [], [], 0);
         end
     end
-    
-    % Update rejection
-    EEG.artifacts.BCT = BCT;
-    
-    
-    %% --------------------------------------------------------------------
-    %% Algorithm to reject more data based on the rejected data
-    for i=1:length(Art) 
-        if any(strcmp(StepsPost,Art(i).algorithm)) && any(Art(i).loops==loop)
-            step = sum(stepdone)+1;
-            thealgh = Art(i).algorithm;
-            flds = fieldnames(Art(i).P);
-            vals = struct2cell(Art(i).P);
-            inputs = cat(1,flds(:)',vals(:)');
-            fhandle = str2func(thealgh);
-            
-            fprintf('%s\n',repmat('-',[1 30]))
-            fprintf('Rejection step % 2d: %s\n\n',step,thealgh)
-            
-            [ EEG, change ] = fhandle( EEG, inputs{:},'updatesummary',0,'updatealgorithm',0);
-            
-            nsmplchange = sum(change(:));
-            RejxStep(step) = nsmplchange;
-            RejxStepNew(step) = nsmplchange;
-            BCTr{step} = change;
-            if strcmp(thealgh,'eega_tIncShortBad')
-                fprintf('New data re-included % 4.2f %%\n\n', nsmplchange/nsmpl*100)
-            else
-                fprintf('New data rejected % 4.2f %%\n\n', nsmplchange/nsmpl*100)          
+
+    %% ========================================================================
+    %% Reject based on the different algorithms
+    stepname = cell(nSteps,1);
+    stepdone = false(nSteps,1);
+    parameters = cell(nSteps,1);
+    RejxStep = zeros(nSteps,1);
+    RejxStepNew = zeros(nSteps,1);
+    ok = 0;
+    loop = 0;
+
+    while ~ok
+
+        loop = loop+1;
+        fprintf('\n******** LOOP %d ********\n\n',loop)
+        BCT_pre = BCT;
+
+        %% --------------------------------------------------------------------
+        %% Algorithms to detect artifacts
+        for i=1:length(Art)
+            if any(strcmp(StepsArt,Art(i).algorithm)) && any(Art(i).loops==loop)
+                step = sum(stepdone)+1;
+                thealgh = Art(i).algorithm;
+                flds = fieldnames(Art(i).P);
+                vals = struct2cell(Art(i).P);
+                inputs = cat(1,flds(:)',vals(:)');
+                fhandle = str2func(thealgh);
+
+                fprintf('%s\n',repmat('-',[1 30]))
+                fprintf('Rejection step % 2d: %s\n\n',step,thealgh)
+
+                [ ~, bct ] = fhandle( EEG, inputs{:});
+
+
+                nsmplrej = sum(bct(:));
+                nnewsmplrej = bct & ~BCT;
+                nnewsmplrej = sum(nnewsmplrej(:));
+                RejxStep(step) = nsmplrej;
+                RejxStepNew(step) = nnewsmplrej;
+                BCT = bct | BCT;
+                BCTr{step} = bct;
+
+                fprintf('New data rejected % 4.2f %%\n\n', nnewsmplrej/nsmpl*100)
+
+                stepdone(step) = 1;
+                stepname{step} = thealgh;
+                parameters{step} = Art(i).P;
+
             end
-            
-            stepdone(step) = 1;
-            stepname{step} = thealgh;
-            parameters{step} = Art(i).P;
         end
+
+        % Update rejection
+        EEG.artifacts.BCT = BCT;
+
+
+        %% --------------------------------------------------------------------
+        %% Algorithm to reject more data based on the rejected data
+        for i=1:length(Art)
+            if any(strcmp(StepsPost,Art(i).algorithm)) && any(Art(i).loops==loop)
+                step = sum(stepdone)+1;
+                thealgh = Art(i).algorithm;
+                flds = fieldnames(Art(i).P);
+                vals = struct2cell(Art(i).P);
+                inputs = cat(1,flds(:)',vals(:)');
+                fhandle = str2func(thealgh);
+
+                fprintf('%s\n',repmat('-',[1 30]))
+                fprintf('Rejection step % 2d: %s\n\n',step,thealgh)
+
+                [ EEG, change ] = fhandle( EEG, inputs{:},'updatesummary',0,'updatealgorithm',0);
+
+                nsmplchange = sum(change(:));
+                RejxStep(step) = nsmplchange;
+                RejxStepNew(step) = nsmplchange;
+                BCTr{step} = change;
+                if strcmp(thealgh,'eega_tIncShortBad')
+                    fprintf('New data re-included % 4.2f %%\n\n', nsmplchange/nsmpl*100)
+                else
+                    fprintf('New data rejected % 4.2f %%\n\n', nsmplchange/nsmpl*100)
+                end
+
+                stepdone(step) = 1;
+                stepname{step} = thealgh;
+                parameters{step} = Art(i).P;
+            end
+        end
+
+        % Update rejection
+        BCT = EEG.artifacts.BCT;
+
+
+
+        %% --------------------------------------------------------------------
+        %% See if new data was rejected in this loop
+        newrej = BCT & ~BCT_pre;
+        newrej = sum(newrej(:))/(nEl*nS*nEp)*100;
+        fprintf('%s\n',repmat('-',[1 30]))
+        fprintf('NEW DATA REJECTED LOOP %d: %8.4f %%\n',loop, newrej)
+        fprintf('%s\n',repmat('-',[1 30]))
+        if (cnf.RejTolerance ~= 0) && (newrej <= cnf.RejTolerance)
+            ok=1;
+        end
+        if loop==cnf.MaxLoop
+            ok=1;
+        end
+
+
     end
-    
-    % Update rejection
-    BCT = EEG.artifacts.BCT;
-    
-  
-    
-    %% --------------------------------------------------------------------
-    %% See if new data was rejected in this loop
-    newrej = BCT & ~BCT_pre;
-    newrej = sum(newrej(:))/(nEl*nS*nEp)*100;
-    fprintf('%s\n',repmat('-',[1 30]))
-    fprintf('NEW DATA REJECTED LOOP %d: %8.4f %%\n',loop, newrej)
-    fprintf('%s\n',repmat('-',[1 30]))
-    if (cnf.RejTolerance ~= 0) && (newrej <= cnf.RejTolerance)
-        ok=1;        
+
+    fprintf('\nEnd of loops \n')
+
+    %% ========================================================================
+    %% Original data back
+    if cnf.FilterDo
+        EEG.data = dat_orig;
     end
-    if loop==cnf.MaxLoop
-        ok=1;
+
+    %% ========================================================================
+    %% Summary
+    step_tot = sum(stepdone);
+    TotSmpl = nEl*nS*nEp;
+    TotSmplRej = sum(BCT(:));
+    TotSmplRem = TotSmpl-TotSmplRej;
+    ProRejxStep = RejxStep / TotSmpl*100;
+    ProRejxStepNew = RejxStepNew / TotSmpl*100;
+    fprintf('%s\n',repmat('\',[1 80]))
+    for i=1:step_tot
+        stp = stepname{i};
+        fprintf('  - Step %02d: %s %s %12d (% 5.1f %%) / New %12d (% 5.1f %%) \n',...
+            i, stp, repmat(' ',[20-numel(stp) 1]), RejxStep(i), ProRejxStep(i), RejxStepNew(i), ProRejxStepNew(i));
     end
-      
-    
-end
+    fprintf('%s\n',repmat('\',[1 80]))
+    fprintf('Rejected samples:  %010d (%2.1f %%)\n', TotSmplRej, TotSmplRej/TotSmpl*100);
+    fprintf('Remaining samples: %010d (%2.1f %%)\n', TotSmplRem, TotSmplRem/TotSmpl*100);
+    fprintf('%s\n',repmat('\',[1 80]))
+    fprintf('\n')
 
-fprintf('\nEnd of loops \n')
+    %% ========================================================================
+    %% Update EEG
+    EEG.artifacts.algorithm.parameters = cat(1,EEG.artifacts.algorithm.parameters(:),parameters(:));
+    stepname = stepname(logical(stepdone));
+    EEG.artifacts.algorithm.stepname = cat(1,EEG.artifacts.algorithm.stepname(:),stepname(:));
+    EEG.artifacts.algorithm.rejxstep = cat(1,EEG.artifacts.algorithm.rejxstep(:),RejxStep(:));
+    if exist('eega_summarypp','file')==2
+        EEG = eega_summarypp(EEG);
+    end
+    if cnf.KeepRejCause
+        EEG.artifacts.BCTSr = BCTr(logical(stepdone));
+    end
 
-%% ========================================================================
-%% Original data back
-if cnf.FilterDo
-    EEG.data = dat_orig;
 end
-
-%% ========================================================================
-%% Summary 
-step_tot = sum(stepdone);
-TotSmpl = nEl*nS*nEp;
-TotSmplRej = sum(BCT(:));
-TotSmplRem = TotSmpl-TotSmplRej;
-ProRejxStep = RejxStep / TotSmpl*100;
-ProRejxStepNew = RejxStepNew / TotSmpl*100;
-fprintf('%s\n',repmat('\',[1 80]))
-for i=1:step_tot
-    stp = stepname{i};
-    fprintf('  - Step %02d: %s %s %12d (% 5.1f %%) / New %12d (% 5.1f %%) \n',...
-        i, stp, repmat(' ',[20-numel(stp) 1]), RejxStep(i), ProRejxStep(i), RejxStepNew(i), ProRejxStepNew(i));
-end
-fprintf('%s\n',repmat('\',[1 80]))
-fprintf('Rejected samples:  %010d (%2.1f %%)\n', TotSmplRej, TotSmplRej/TotSmpl*100);
-fprintf('Remaining samples: %010d (%2.1f %%)\n', TotSmplRem, TotSmplRem/TotSmpl*100);
-fprintf('%s\n',repmat('\',[1 80]))
-fprintf('\n')
-
-%% ========================================================================
-%% Update EEG
-EEG.artifacts.algorithm.parameters = cat(1,EEG.artifacts.algorithm.parameters(:),parameters(:));
-stepname = stepname(logical(stepdone));
-EEG.artifacts.algorithm.stepname = cat(1,EEG.artifacts.algorithm.stepname(:),stepname(:));
-EEG.artifacts.algorithm.rejxstep = cat(1,EEG.artifacts.algorithm.rejxstep(:),RejxStep(:));
-if exist('eega_summarypp','file')==2
-    EEG = eega_summarypp(EEG);
-end
-if cnf.KeepRejCause
-    EEG.artifacts.BCTSr = BCTr(logical(stepdone));
-end
-
 end

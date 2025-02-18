@@ -53,7 +53,7 @@ for k=1:numel(REfev)
             end
             newev.type = newevent;
             newev.latency = round(REflat(k) + eventspos(i)*EEG.srate); % latency in samples
-            newev.latency = newev.latency/EEG.srate; % latency in seconds
+%             newev.latency = newev.latency/EEG.srate; % latency in seconds
             newev.urevent = numel(EEGout.urevent) + 1;
             if isfield(newev,'Type')
                 newev.Type = 'Stimulus Event';
@@ -64,8 +64,8 @@ for k=1:numel(REfev)
             if isfield(newev,'Code')
                 newev.Code = newevent;
             end
-            if isfield(EEG.event(REfev(k)),'epoch')
-                newev.epoch = EEG.event(REfev(k)).epoch;
+            if isfield(EEGout.event(REfev(k)),'epoch')
+                newev.epoch = EEGout.event(REfev(k)).epoch;
             end
             
             fvals = cell(1,numel(fff));
@@ -76,17 +76,17 @@ for k=1:numel(REfev)
             % add the event - added by Ana Flo 06/12/2021
             fnames_i = fff;
             fvals_i = fvals;
-            evn = length(EEG.event)+1;
+            evn = length(EEGout.event)+1;
             for ff=1:length(fnames_i)
-                EEG.event(evn).(fnames_i{ff}) = fvals_i{ff};
+                EEGout.event(evn).(fnames_i{ff}) = fvals_i{ff};
             end
             
             % add the urevent - added by Ana Flo 06/12/2021
             fnames_i_ur = {'type' 'latency'};
             fvals_i_ur = cat(2,fvals_i(strcmp(fnames_i,'type')), fvals_i(strcmp(fnames_i,'latency')));
-            evn = length(EEG.urevent)+1;
+            evn = length(EEGout.urevent)+1;
             for ff=1:length(fnames_i_ur)
-                EEG.urevent(evn).(fnames_i_ur{ff}) = fvals_i_ur{ff};
+                EEGout.urevent(evn).(fnames_i_ur{ff}) = fvals_i_ur{ff};
             end
             
 %             EEGout = pop_editeventvals( EEGout, 'add', [evpos fvals]);  - commented by Ana Flo 06/12/2021
@@ -97,8 +97,8 @@ for k=1:numel(REfev)
     end
 end
 % Check the structure - added by Ana Flo 06/12/2021
-EEG = eeg_checkset(EEG, 'eventconsistency');
-EEG = eeg_checkset(EEG, 'checkur');
+EEGout = eeg_checkset(EEGout, 'eventconsistency');
+EEGout = eeg_checkset(EEGout, 'checkur');
 
 fprintf('\n')
 
