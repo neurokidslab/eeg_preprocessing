@@ -123,7 +123,7 @@ for j=1:nR
             dd = change(~EEG.artifacts.BCT);          
             perc = prctile(dd,[25 50 75]);
             IQ   = perc(3)-perc(1);  
-            t_u  = perc + P.thresh(j)*IQ;
+            t_u  = perc(3) + P.thresh(j)*IQ;
             
             Ru = Ru | change>t_u;
             T(:,j) = t_u;
